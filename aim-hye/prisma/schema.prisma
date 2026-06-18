@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Brewery {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  shortName String
+  logoUrl   String?
+  products  Product[]
+  createdAt DateTime  @default(now())
+}
+
+model Product {
+  id             String   @id @default(cuid())
+  name           String
+  sku            String   @unique
+  breweryId      String
+  brewery        Brewery  @relation(fields: [breweryId], references: [id])
+  category       String   // lager, stout, malt, spirits, rtd, wine
+  size           String   // 33cl, 60cl, 1L, 75cl, 35cl
+  packSize       Int      // bottles per crate/pack
+  pricePerCrate  Float
+  pricePerBottle Float
+  depositPerCrate Float   @default(0) // empty bottle deposit value per crate
+  stockCrates    Int      @default(0)
+  minStockCrates Int      @default(5)
+  imageUrl       String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  orderItems       OrderItem[]
+  truckAllocations TruckAllocation[]
+  emptyReturns     EmptyReturn[]
+  stockLogs        StockLog[]
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  address   String
+  lga       String?
+  state     String   @default("Nigeria")
+  notes     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  orders    Order[]
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNo         String      @unique
+  customerId      String
+  customer        Customer    @relation(fields: [customerId], references: [id])
+  status          String      @default("PENDING") // PENDING, CONFIRMED, DISPATCHED, DELIVERED, CANCELLED
+  totalAmount     Float
+  depositAmount   Float       @default(0)
+  notes           String?
+  deliveryAddress String
+  assignedTruckId String?
+  assignedTruck   Truck?      @relation(fields: [assignedTruckId], references: [id])
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  items           OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int     // in crates
+  unitPrice Float
+  subtotal  Float
+}
+
+model Truck {
+  id          String   @id @default(cuid())
+  plateNumber String   @unique
+  make        String
+  model       String
+  year        Int
+  color       String?
+  capacity    Int      @default(200) // max crates
+  isActive    Boolean  @default(true)
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  driver      Driver?
+  salesboy    Salesboy?
+  allocations TruckAllocation[]
+  orders      Order[]
+  emptyReturns EmptyReturn[]
+}
+
+model Driver {
+  id             String    @id @default(cuid())
+  truckId        String?   @unique
+  truck          Truck?    @relation(fields: [truckId], references: [id])
+  firstName      String
+  lastName       String
+  phone          String
+  alternatePhone String?
+  address        String
+  lga            String?
+  state          String?
+  nin            String?
+  licenseNo      String?
+  licenseExpiry  DateTime?
+  photoUrl       String?
+  ninDocUrl      String?
+  licenseDocUrl  String?
+  isActive       Boolean   @default(true)
+  startDate      DateTime?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  guarantors Guarantor[]
+}
+
+model Salesboy {
+  id             String    @id @default(cuid())
+  truckId        String?   @unique
+  truck          Truck?    @relation(fields: [truckId], references: [id])
+  firstName      String
+  lastName       String
+  phone          String
+  alternatePhone String?
+  address        String
+  lga            String?
+  state          String?
+  nin            String?
+  photoUrl       String?
+  ninDocUrl      String?
+  isActive       Boolean   @default(true)
+  startDate      DateTime?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  guarantors Guarantor[]
+}
+
+model Guarantor {
+  id           String    @id @default(cuid())
+  driverId     String?
+  driver       Driver?   @relation(fields: [driverId], references: [id])
+  salespersonId String?
+  salesboy     Salesboy? @relation(fields: [salespersonId], references: [id])
+  name         String
+  phone        String
+  address      String
+  occupation   String?
+  relationship String?
+  letterUrl    String?
+  createdAt    DateTime  @default(now())
+}
+
+// Daily truck stock loading
+model TruckAllocation {
+  id           String   @id @default(cuid())
+  truckId      String
+  truck        Truck    @relation(fields: [truckId], references: [id])
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  date         DateTime @default(now())
+  cratesLoaded Int
+  cratesReturn Int      @default(0)
+  cratesSold   Int      @default(0)
+  pricePerCrate Float
+  totalValue   Float    @default(0)
+  amountRemitted Float  @default(0)
+  notes        String?
+  status       String   @default("LOADED") // LOADED, RETURNED, RECONCILED
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Empties returned by truck
+model EmptyReturn {
+  id             String   @id @default(cuid())
+  truckId        String
+  truck          Truck    @relation(fields: [truckId], references: [id])
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id])
+  date           DateTime @default(now())
+  cratesReturned Int      @default(0)
+  looseBottles   Int      @default(0)
+  totalBottles   Int      @default(0)
+  depositValue   Float    @default(0)
+  notes          String?
+  createdAt      DateTime @default(now())
+}
+
+// Stock movement log
+model StockLog {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  prevQty   Int
+  newQty    Int
+  change    Int
+  reason    String   // EVENING_UPDATE, TRUCK_LOAD, TRUCK_RETURN, PURCHASE, ADJUSTMENT
+  reference String?  // allocation ID, order ID, etc.
+  notes     String?
+  createdAt DateTime @default(now())
+}
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("STAFF") // ADMIN, STAFF
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}

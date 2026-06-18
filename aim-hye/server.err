@@ -1,0 +1,9 @@
+⚠ Port 3000 is in use by process 16244, using available port 3002 instead.
+⨯ Another next dev server is already running.
+
+- Local:        http://localhost:3000
+- PID:          16244
+- Dir:          C:\Users\Bak-Abasi\New folder\.claude\.claude\worktrees\focused-mayer-7ab98a\aim-hye
+- Log:          .next\dev\logs\next-development.log
+
+Run taskkill /PID 16244 /F to stop it.
