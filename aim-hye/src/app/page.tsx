@@ -1,33 +1,45 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import { formatNaira } from "@/lib/utils";
+import { getProductImage, CATEGORY_GRADIENTS } from "@/lib/productImages";
+import { useCart, CartProduct } from "@/lib/useCart";
+import Link from "next/link";
 
-interface Product {
-  id: string; name: string; size: string; category: string; pricePerCrate: number;
-  pricePerBottle: number; depositPerCrate: number; stockCrates: number; packSize: number;
-  brewery: { name: string; shortName: string };
-}
-interface CartItem { product: Product; quantity: number }
+type Product = CartProduct; // includes packaging, productFamily
+interface Customer { id: string; name: string; phone: string; email?: string; hasPin: boolean }
 
 const BREWERIES = ["All", "Champion Breweries", "International Breweries", "Nigerian Breweries", "Guinness Nigeria"];
 const CATS = ["All", "lager", "stout", "malt", "rtd", "spirits"];
+const catLabels: Record<string, string> = { lager: "Lager", stout: "Stout", malt: "Malt", rtd: "RTD", spirits: "Spirits" };
 
 export default function StorefrontPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const { cart, addToCart, setItem, clearCart, cartCount, subtotal, deposit } = useCart();
   const [brewery, setBrewery] = useState("All");
   const [cat, setCat] = useState("All");
   const [search, setSearch] = useState("");
   const [showCart, setShowCart] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
-  const [order, setOrder] = useState({ name: "", phone: "", address: "", notes: "" });
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  // Guest checkout fields
+  const [guestInfo, setGuestInfo] = useState({ name: "", phone: "", address: "", notes: "" });
+  // Auth checkout
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"PAYSTACK_CARD" | "BANK_TRANSFER">("PAYSTACK_CARD");
+  const [pinInput, setPinInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [orderPlaced, setOrderPlaced] = useState<{ orderNo: string; total: number } | null>(null);
+  const [orderPlaced, setOrderPlaced] = useState<{ orderNo: string; total: number; orderId?: string } | null>(null);
+  const [checkoutError, setCheckoutError] = useState("");
 
   useEffect(() => {
     fetch("/api/products?active=true").then((r) => r.json()).then((data: Product[]) =>
       setProducts(data.filter((p) => p.stockCrates > 0))
     );
+    // Check if customer is logged in
+    fetch("/api/customer/me")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.customer) setCustomer(data.customer); });
   }, []);
 
   const filtered = products.filter((p) => {
@@ -37,84 +49,210 @@ export default function StorefrontPage() {
     return matchBrew && matchCat && matchSearch;
   });
 
-  function addToCart(product: Product) {
-    setCart((prev) => {
-      const existing = prev.find((i) => i.product.id === product.id);
-      if (existing) return prev.map((i) => i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
-      return [...prev, { product, quantity: 1 }];
+  // Deduplicate by productFamily — collapse same-drink variants into one card
+  const familyMap = new Map<string, Product[]>();
+  for (const p of filtered) {
+    const key = p.productFamily || p.id;
+    if (!familyMap.has(key)) familyMap.set(key, []);
+    familyMap.get(key)!.push(p);
+  }
+  const productGroups = Array.from(familyMap.values()).map((group) => {
+    const sorted = [...group].sort((a, b) => {
+      const sA = parseInt(a.size) || 0, sB = parseInt(b.size) || 0;
+      if (sB !== sA) return sB - sA;
+      const order = (x: Product) => x.packaging === "glass" ? 0 : x.packaging === "can" ? 1 : 2;
+      return order(a) - order(b);
     });
+    const sizes = Array.from(new Set(sorted.map((v) => v.size))).sort((a, b) => parseInt(b) - parseInt(a));
+    const hasVariants = sizes.length > 1 || sorted.some((v) => v.packaging !== sorted[0].packaging);
+    return { rep: sorted[0], all: sorted, sizes, hasVariants };
+  });
+
+  function quickAddToCart(product: Product) {
+    addToCart(product, 1, "crate");
   }
 
   function updateQty(id: string, qty: number) {
-    if (qty <= 0) setCart((prev) => prev.filter((i) => i.product.id !== id));
-    else setCart((prev) => prev.map((i) => i.product.id === id ? { ...i, quantity: qty } : i));
+    // storefront grid always shows crate unit for quick-add
+    const item = cart.find((i) => i.product.id === id && i.unit === "crate");
+    setItem(id, item?.unit ?? "crate", qty);
   }
 
-  const subtotal = cart.reduce((s, i) => s + i.product.pricePerCrate * i.quantity, 0);
-  const deposit = cart.reduce((s, i) => s + i.product.depositPerCrate * i.quantity, 0);
-  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
-
-  async function placeOrder() {
+  // Guest checkout (existing /api/orders flow)
+  async function placeGuestOrder() {
     setSubmitting(true);
+    setCheckoutError("");
     const res = await fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        customer: { name: order.name, phone: order.phone, address: order.address },
-        items: cart.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
-        deliveryAddress: order.address,
-        notes: order.notes,
+        customer: { name: guestInfo.name, phone: guestInfo.phone, address: guestInfo.address },
+        items: cart.map((i) => ({ productId: i.product.id, quantity: i.quantity, unit: i.unit })),
+        deliveryAddress: guestInfo.address,
+        notes: guestInfo.notes,
       }),
     });
     const data = await res.json();
-    setOrderPlaced({ orderNo: data.orderNo, total: data.totalAmount + data.depositAmount });
-    setCart([]);
-    setShowCheckout(false);
     setSubmitting(false);
+    if (res.ok) {
+      setOrderPlaced({ orderNo: data.orderNo, total: data.totalAmount + data.depositAmount });
+      clearCart();
+      setShowCheckout(false);
+    } else {
+      setCheckoutError(data.error || "Order failed");
+    }
   }
 
-  const catLabels: Record<string, string> = { lager: "Lager", stout: "Stout", malt: "Malt", rtd: "RTD", spirits: "Spirits" };
+  // Authenticated checkout
+  const placeAuthOrder = useCallback(async () => {
+    setSubmitting(true);
+    setCheckoutError("");
+
+    // Create the order
+    const orderRes = await fetch("/api/customer/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: cart.map((i) => ({ productId: i.product.id, quantity: i.quantity, unit: i.unit })),
+        deliveryAddress,
+        paymentMethod,
+      }),
+    });
+    const orderData = await orderRes.json();
+    if (!orderRes.ok) {
+      setCheckoutError(orderData.error || "Failed to create order");
+      setSubmitting(false);
+      return;
+    }
+
+    const { orderId, orderNo, totalPayable, paystackRef } = orderData;
+
+    if (paymentMethod === "PAYSTACK_CARD" && paystackRef) {
+      // Launch Paystack popup
+      const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
+      if (!publicKey || publicKey.includes("YOUR_")) {
+        setCheckoutError("Paystack not configured. Please contact the store.");
+        setSubmitting(false);
+        return;
+      }
+
+      // Verify PIN before payment if customer has one
+      if (customer?.hasPin && pinInput.length === 4) {
+        const pinRes = await fetch("/api/customer/pin", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pin: pinInput }),
+        });
+        if (!pinRes.ok) {
+          setCheckoutError("Incorrect PIN");
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      // @ts-expect-error PaystackPop injected via script
+      const handler = window.PaystackPop?.setup({
+        key: publicKey,
+        email: customer?.email || `${customer?.phone}@aimhye.com`,
+        amount: totalPayable * 100, // kobo
+        ref: paystackRef,
+        metadata: { custom_fields: [{ display_name: "Order No", variable_name: "order_no", value: orderNo }] },
+        onSuccess: async (transaction: { reference: string }) => {
+          // Verify payment
+          await fetch("/api/payment/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reference: transaction.reference }),
+          });
+          setOrderPlaced({ orderNo, total: totalPayable, orderId });
+          clearCart();
+          setShowCheckout(false);
+          setSubmitting(false);
+        },
+        onCancel: () => {
+          setCheckoutError("Payment cancelled. Your order is saved — you can pay later.");
+          setSubmitting(false);
+        },
+      });
+      handler?.openIframe();
+    } else {
+      // Bank transfer — order saved, show confirmation
+      setOrderPlaced({ orderNo, total: totalPayable, orderId });
+      clearCart();
+      setShowCheckout(false);
+      setSubmitting(false);
+    }
+  }, [cart, customer, deliveryAddress, paymentMethod, pinInput]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ background: "#f5f5f7" }}>
+      {/* Paystack script */}
+      <script async src="https://js.paystack.co/v1/inline.js" />
+
       {/* Header */}
-      <header className="bg-[#1e3a5f] text-white sticky top-0 z-40 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-40 border-b border-white/10" style={{ background: "rgba(28,28,30,0.92)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+        <div className="max-w-7xl mx-auto px-5 py-3 flex items-center justify-between">
+          {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center font-bold text-xl">A</div>
+            <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-white flex items-center justify-center shadow">
+              <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-0.5" />
+            </div>
             <div>
-              <p className="font-bold text-lg leading-tight">Aim-Hye Integrated Concepts</p>
-              <p className="text-blue-300 text-xs">Certified Drinks Distributor — Nigeria</p>
+              <p className="font-bold text-white text-base leading-tight tracking-tight">AIM-HYE</p>
+              <p className="text-[11px] leading-tight" style={{ color: "#e0302a" }}>Integrated Concepts Limited</p>
             </div>
           </div>
-          <button
-            onClick={() => setShowCart(true)}
-            className="relative flex items-center gap-2 bg-amber-500 hover:bg-amber-600 transition-colors text-white px-4 py-2 rounded-xl font-medium"
-          >
-            🛒 Cart
-            {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">{cartCount}</span>
+          {/* Nav right */}
+          <div className="flex items-center gap-3">
+            {customer ? (
+              <Link href="/account" className="flex items-center gap-2 text-white/70 hover:text-white text-sm transition-colors">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ background: "#e0302a" }}>
+                  {customer.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="hidden sm:inline text-white/80">{customer.name.split(" ")[0]}</span>
+              </Link>
+            ) : (
+              <Link href="/account/login" className="text-white/70 hover:text-white text-sm transition-colors px-3 py-1.5 rounded-lg border border-white/20 hover:border-white/40">Sign In</Link>
             )}
-          </button>
+            <button
+              onClick={() => setShowCart(true)}
+              className="relative flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all"
+              style={{ background: "#e0302a" }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              Cart
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center" style={{ color: "#e0302a" }}>{cartCount}</span>
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Hero */}
-      <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2563eb] text-white py-12 px-4">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold mb-2">Order Your Favourite Drinks</h1>
-          <p className="text-blue-200 text-lg">Champion · International · Nigerian · Guinness Breweries — All in one place</p>
-          <div className="mt-6 flex flex-wrap gap-2">
-            {["🍺 Lager Beers", "🖤 Stouts", "🥤 Malt Drinks", "🍹 RTD", "🥃 Spirits"].map((b) => (
-              <span key={b} className="bg-white/20 text-white text-sm px-3 py-1 rounded-full">{b}</span>
+      <div className="text-white py-16 px-4 relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1c1c1e 0%, #2d2d2f 50%, #1c1c1e 100%)" }}>
+        {/* Red accent line */}
+        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, transparent, #e0302a, transparent)" }} />
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div>
+            <p className="text-xs font-semibold tracking-widest uppercase mb-2" style={{ color: "#e0302a" }}>Certified Distributor · Nigeria</p>
+            <h1 className="text-4xl font-black leading-tight tracking-tight mb-3">Order Your Favourite<br /><span style={{ color: "#e0302a" }}>Drinks</span></h1>
+            <p className="text-white/50 text-sm">Champion · International · Nigerian · Guinness Breweries</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {["Lager", "Stout", "Malt", "RTD", "Spirits"].map((b) => (
+              <span key={b} className="text-xs font-semibold px-3 py-1.5 rounded-full border border-white/20 text-white/70">{b}</span>
             ))}
           </div>
         </div>
+        <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, transparent, #e0302a44, transparent)" }} />
       </div>
 
       {/* Filters */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap gap-3">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-wrap gap-3">
           <input
             type="text"
             placeholder="Search drinks..."
@@ -127,7 +265,8 @@ export default function StorefrontPage() {
               <button
                 key={b}
                 onClick={() => setBrewery(b)}
-                className={`text-xs px-3 py-2 rounded-xl border transition-colors ${brewery === b ? "bg-[#1e3a5f] text-white border-[#1e3a5f]" : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"}`}
+                className={`text-xs px-3 py-2 rounded-xl border transition-all font-medium ${brewery === b ? "text-white border-transparent" : "bg-white text-slate-500 border-slate-200 hover:border-slate-400"}`}
+                style={brewery === b ? { background: "#1c1c1e", borderColor: "#1c1c1e" } : {}}
               >
                 {b === "All" ? "All Breweries" : b.replace(" Breweries", "").replace(" Nigeria", "")}
               </button>
@@ -138,7 +277,8 @@ export default function StorefrontPage() {
               <button
                 key={c}
                 onClick={() => setCat(c)}
-                className={`text-xs px-3 py-2 rounded-xl border transition-colors capitalize ${cat === c ? "bg-amber-500 text-white border-amber-500" : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"}`}
+                className={`text-xs px-3 py-2 rounded-xl border transition-all font-medium capitalize ${cat === c ? "text-white border-transparent" : "bg-white text-slate-500 border-slate-200 hover:border-slate-400"}`}
+                style={cat === c ? { background: "#e0302a", borderColor: "#e0302a" } : {}}
               >
                 {c === "All" ? "All Types" : catLabels[c] || c}
               </button>
@@ -146,57 +286,160 @@ export default function StorefrontPage() {
           </div>
         </div>
 
-        {/* Product grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mt-6">
-          {filtered.map((p) => {
-            const inCart = cart.find((i) => i.product.id === p.id);
-            return (
-              <div key={p.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
-                <div className="bg-gradient-to-br from-slate-100 to-slate-200 h-32 flex items-center justify-center text-5xl">
-                  {p.category === "stout" ? "🖤" : p.category === "malt" ? "🥤" : p.category === "spirits" ? "🥃" : p.category === "rtd" ? "🍹" : "🍺"}
-                </div>
-                <div className="p-3">
-                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{p.brewery.shortName}</span>
-                  <h3 className="font-semibold text-slate-800 text-sm mt-1 leading-tight">{p.name}</h3>
-                  <p className="text-xs text-slate-400">{p.size} · {p.packSize} bottles/crate</p>
-                  <p className="text-base font-bold text-[#1e3a5f] mt-1">{formatNaira(p.pricePerCrate)}<span className="text-xs font-normal text-slate-400">/crate</span></p>
-                  <p className="text-xs text-slate-400">+{formatNaira(p.depositPerCrate)} deposit/crate</p>
-                  <p className="text-xs text-slate-400">{p.stockCrates} crates available</p>
+        {/* Product grid — deduplicated by productFamily */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 mt-6">
+          {productGroups.map(({ rep: p, all, sizes, hasVariants }) => {
+                const inCart = cart.find((i) => i.product.id === p.id && i.unit === "crate");
+                const imgSrc = p.imageUrl || getProductImage(p.sku);
+                const grad = CATEGORY_GRADIENTS[p.category] ?? CATEGORY_GRADIENTS.lager;
+                const catLabel = p.category === "rtd" ? "RTD" : p.category.charAt(0).toUpperCase() + p.category.slice(1);
+                return (
+                  <div
+                    key={p.id}
+                    className="bg-white rounded-2xl overflow-hidden flex flex-col border border-slate-100 group transition-all duration-300 hover:shadow-2xl hover:-translate-y-1"
+                  >
+                    {/* Image area — click to go to product page */}
+                    <Link href={`/products/${p.id}`} className={`relative block bg-gradient-to-b ${grad.bg} overflow-hidden`} style={{ height: 200 }}>
+                      <div className={`absolute inset-0 flex items-center justify-center ${grad.text} text-4xl font-black opacity-20 select-none tracking-widest`}>
+                        {p.brewery.shortName}
+                      </div>
+                      {imgSrc && (
+                        <Image
+                          src={imgSrc}
+                          alt={p.name}
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                          className={`group-hover:scale-105 transition-transform duration-300 ${["INTL-FLYF-33","INTL-CASTL-33","INTL-BUD-33","INTL-BUDR-33","GUIN-SATZ-60"].includes(p.sku) ? "object-cover" : "object-contain p-2 drop-shadow-lg"}`}
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                      )}
+                      {/* Badges */}
+                      <div className="absolute top-2 left-2 flex flex-col gap-1">
+                        <span className="text-[10px] font-bold bg-white/90 text-slate-700 px-2 py-0.5 rounded-full shadow-sm leading-tight">
+                          {p.brewery.shortName}
+                        </span>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-sm leading-tight ${
+                          p.category === "stout" ? "bg-slate-800 text-slate-100" :
+                          p.category === "malt" ? "bg-yellow-600 text-white" :
+                          p.category === "spirits" ? "bg-purple-700 text-white" :
+                          p.category === "rtd" ? "bg-pink-600 text-white" :
+                          "bg-amber-600 text-white"
+                        }`}>{catLabel}</span>
+                      </div>
+                      {p.stockCrates <= 10 && (
+                        <span className="absolute top-2 right-2 text-[10px] font-bold bg-red-500 text-white px-2 py-0.5 rounded-full shadow-sm">
+                          Only {p.stockCrates} left
+                        </span>
+                      )}
+                      {/* Size pills overlay at bottom of image — show all available sizes */}
+                      {hasVariants && (
+                        <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1 flex-wrap px-2">
+                          {sizes.map((sz) => (
+                            <span key={sz} className={`text-[10px] font-bold px-2 py-0.5 rounded-full shadow border ${sz === p.size ? "bg-white text-slate-800 border-white" : "bg-white/30 text-white border-white/50"}`}>
+                              {sz}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </Link>
 
-                  {inCart ? (
-                    <div className="flex items-center gap-2 mt-2">
-                      <button onClick={() => updateQty(p.id, inCart.quantity - 1)} className="w-7 h-7 rounded-full border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-100">-</button>
-                      <span className="font-bold text-slate-800 text-sm">{inCart.quantity}</span>
-                      <button onClick={() => updateQty(p.id, inCart.quantity + 1)} className="w-7 h-7 rounded-full bg-[#1e3a5f] text-white flex items-center justify-center hover:bg-blue-800">+</button>
+                    {/* Info area */}
+                    <div className="p-3 flex flex-col gap-1 flex-1">
+                      <Link href={`/products/${p.id}`} className="hover:text-blue-700 transition-colors">
+                        {/* Strip size from name if the family has multiple sizes */}
+                        <h3 className="font-bold text-slate-800 text-sm leading-tight">
+                          {hasVariants ? p.name.replace(/\s*\d+cl\s*/i, "").trim() : p.name}
+                        </h3>
+                      </Link>
+                      <p className="text-xs text-slate-400">
+                        {hasVariants ? `${sizes.join(" / ")} · tap to choose` : `${p.size} · ${p.packSize} bottles/crate`}
+                      </p>
+
+                      <div className="mt-1">
+                        <p className="text-lg font-extrabold text-[#1e3a5f] leading-tight">
+                          {hasVariants ? `From ${formatNaira(Math.min(...all.map((v) => v.pricePerCrate)))}` : formatNaira(p.pricePerCrate)}
+                          <span className="text-xs font-normal text-slate-400 ml-1">/crate</span>
+                        </p>
+                        {!hasVariants && (
+                          <p className="text-[11px] text-slate-400">
+                            {formatNaira(p.pricePerBottle)}/btl · +{formatNaira(p.depositPerCrate)} deposit
+                          </p>
+                        )}
+                      </div>
+
+                      {p.stockCrates > 10 && (
+                        <p className="text-[11px] text-green-600 font-medium">{p.stockCrates} crates available</p>
+                      )}
+
+                      <div className="mt-auto pt-2">
+                        {hasVariants ? (
+                          <Link
+                            href={`/products/${p.id}`}
+                            className="w-full block text-center text-white text-xs py-2.5 rounded-xl transition-all font-semibold tracking-wide hover:opacity-90 active:opacity-80"
+                            style={{ background: "#e0302a" }}
+                          >
+                            Choose Size
+                          </Link>
+                        ) : inCart ? (
+                          <div className="flex items-center justify-between gap-1 bg-slate-50 rounded-xl px-2 py-1.5">
+                            <button
+                              onClick={() => updateQty(p.id, inCart.quantity - 1)}
+                              className="w-8 h-8 rounded-full border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors font-bold text-lg leading-none"
+                            >
+                              −
+                            </button>
+                            <span className="font-bold text-slate-800 text-sm min-w-6 text-center">{inCart.quantity} cr</span>
+                            <button
+                              onClick={() => updateQty(p.id, inCart.quantity + 1)}
+                              disabled={inCart.quantity >= p.stockCrates}
+                              className="w-8 h-8 rounded-full bg-[#1c1c1e] text-white flex items-center justify-center hover:bg-[#2d2d2f] disabled:opacity-40 transition-colors font-bold text-lg leading-none"
+                            >
+                              +
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => quickAddToCart(p)}
+                            className="w-full bg-[#1c1c1e] hover:bg-[#2d2d2f] active:bg-blue-900 text-white text-xs py-2.5 rounded-xl transition-colors font-semibold tracking-wide"
+                          >
+                            Add to Cart
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <button
-                      onClick={() => addToCart(p)}
-                      className="w-full mt-2 bg-[#1e3a5f] text-white text-xs py-2 rounded-xl hover:bg-blue-800 transition-colors font-medium"
-                    >
-                      Add to Cart
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
+                  </div>
+                );
           })}
         </div>
         {filtered.length === 0 && (
           <div className="text-center py-20 text-slate-400">
-            <p className="text-4xl mb-3">🍺</p>
-            <p className="text-lg">No products found</p>
+            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="text-lg font-medium text-slate-500">No products found</p>
             <p className="text-sm">Try adjusting your filters</p>
           </div>
         )}
       </div>
 
       {/* Footer */}
-      <footer className="bg-[#1e3a5f] text-white mt-16 py-8 px-4">
+      <footer className="text-white mt-16 py-10 px-4 border-t border-white/10" style={{ background: "#1c1c1e" }}>
         <div className="max-w-7xl mx-auto text-center">
-          <p className="font-bold text-lg">Aim-Hye Integrated Concepts Limited</p>
-          <p className="text-blue-300 text-sm mt-1">Authorized distributor of Champion, International, Nigerian & Guinness Breweries</p>
-          <p className="text-blue-400 text-xs mt-3">Orders are processed within 24 hours · Delivery available in your area</p>
+          <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-white mx-auto mb-3 shadow">
+            <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-1" />
+          </div>
+          <p className="font-bold text-base tracking-tight">AIM-HYE <span style={{ color: "#e0302a" }}>Integrated Concepts Limited</span></p>
+          <p className="text-white/40 text-xs mt-2">Authorized distributor — Champion · International · Nigerian · Guinness Breweries</p>
+          <p className="text-white/30 text-xs mt-1">Orders processed within 24 hours · Delivery available in your area</p>
+          <div className="mt-5 flex justify-center gap-5 text-xs text-white/40">
+            <Link href="/account/login" className="hover:text-white transition-colors">Customer Login</Link>
+            <span>·</span>
+            <Link href="/account/register" className="hover:text-white transition-colors">Create Account</Link>
+            <span>·</span>
+            <Link href="/login" className="hover:text-white transition-colors">Staff Login</Link>
+          </div>
         </div>
       </footer>
 
@@ -207,40 +450,49 @@ export default function StorefrontPage() {
           <div className="relative bg-white w-full max-w-md h-full flex flex-col shadow-2xl">
             <div className="flex items-center justify-between p-6 border-b border-slate-200">
               <h2 className="text-lg font-bold text-slate-800">Your Cart ({cartCount} crates)</h2>
-              <button onClick={() => setShowCart(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+              <button onClick={() => setShowCart(false)} className="text-slate-400 hover:text-slate-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {cart.length === 0 ? (
                 <div className="text-center text-slate-400 py-12">
-                  <p className="text-4xl mb-3">🛒</p>
+                  <svg className="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
                   <p>Your cart is empty</p>
                 </div>
               ) : (
-                cart.map((item) => (
-                  <div key={item.product.id} className="flex items-center gap-4 bg-slate-50 rounded-xl p-3">
+                cart.map((item) => {
+                  const unitPrice = item.unit === "bottle" ? item.product.pricePerBottle : item.product.pricePerCrate;
+                  const unitLabel = item.unit === "bottle" ? "btl" : "crate";
+                  return (
+                  <div key={`${item.product.id}-${item.unit}`} className="flex items-center gap-4 bg-slate-50 rounded-xl p-3">
                     <div className="flex-1">
                       <p className="font-medium text-slate-800 text-sm">{item.product.name} ({item.product.size})</p>
-                      <p className="text-xs text-slate-400">{item.product.brewery.shortName} · {formatNaira(item.product.pricePerCrate)}/crate</p>
-                      <p className="text-sm font-bold text-[#1e3a5f]">{formatNaira(item.product.pricePerCrate * item.quantity)}</p>
+                      <p className="text-xs text-slate-400">{item.product.brewery.shortName} · {formatNaira(unitPrice)}/{unitLabel}</p>
+                      <p className="text-sm font-bold text-[#1e3a5f]">{formatNaira(unitPrice * item.quantity)}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => updateQty(item.product.id, item.quantity - 1)} className="w-7 h-7 rounded-full border flex items-center justify-center text-slate-600 hover:bg-slate-200">-</button>
-                      <span className="w-6 text-center font-bold text-sm">{item.quantity}</span>
-                      <button onClick={() => updateQty(item.product.id, item.quantity + 1)} className="w-7 h-7 rounded-full bg-[#1e3a5f] text-white flex items-center justify-center">+</button>
+                      <button onClick={() => setItem(item.product.id, item.unit, item.quantity - 1)} className="w-7 h-7 rounded-full border flex items-center justify-center text-slate-600 hover:bg-slate-200">-</button>
+                      <span className="w-10 text-center font-bold text-sm">{item.quantity} {unitLabel}</span>
+                      <button onClick={() => setItem(item.product.id, item.unit, item.quantity + 1)} className="w-7 h-7 rounded-full bg-[#1c1c1e] text-white flex items-center justify-center">+</button>
                     </div>
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
             {cart.length > 0 && (
               <div className="p-6 border-t border-slate-200 space-y-3">
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between"><span className="text-slate-500">Subtotal</span><span className="font-medium">{formatNaira(subtotal)}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-500">Bottle Deposit</span><span className="font-medium">{formatNaira(deposit)}</span></div>
-                  <div className="flex justify-between font-bold text-base border-t border-slate-200 pt-2"><span>Total</span><span>{formatNaira(subtotal + deposit)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">Bottle Deposit (refundable)</span><span className="font-medium">{formatNaira(deposit)}</span></div>
+                  <div className="flex justify-between font-bold text-base border-t border-slate-200 pt-2"><span>Total Payable</span><span>{formatNaira(subtotal + deposit)}</span></div>
                 </div>
-                <p className="text-xs text-slate-400">Deposit is refundable when you return empty bottles.</p>
-                <button onClick={() => { setShowCart(false); setShowCheckout(true); }} className="w-full bg-amber-500 text-white py-3 rounded-xl font-semibold hover:bg-amber-600 transition-colors">Checkout →</button>
+                <button onClick={() => { setShowCart(false); setShowCheckout(true); }} className="w-full bg-amber-500 text-white py-3 rounded-xl font-semibold hover:bg-amber-600 transition-colors">
+                  Checkout →
+                </button>
               </div>
             )}
           </div>
@@ -250,30 +502,19 @@ export default function StorefrontPage() {
       {/* Checkout Modal */}
       {showCheckout && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold text-slate-800 mb-4">Complete Your Order</h2>
-            <div className="space-y-3 mb-5">
-              {[
-                { label: "Full Name *", key: "name", type: "text" },
-                { label: "Phone Number *", key: "phone", type: "tel" },
-                { label: "Delivery Address *", key: "address", type: "text" },
-              ].map((f) => (
-                <div key={f.key}>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{f.label}</label>
-                  <input
-                    type={f.type}
-                    value={order[f.key as keyof typeof order]}
-                    onChange={(e) => setOrder({ ...order, [f.key]: e.target.value })}
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-              ))}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Additional Notes</label>
-                <textarea value={order.notes} onChange={(e) => setOrder({ ...order, notes: e.target.value })} className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none" rows={2} />
-              </div>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold text-slate-800">Complete Your Order</h2>
+              <button onClick={() => setShowCheckout(false)} className="text-slate-400 hover:text-slate-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
             </div>
+
+            {checkoutError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">{checkoutError}</div>
+            )}
+
+            {/* Order summary */}
             <div className="bg-slate-50 rounded-xl p-4 mb-5 space-y-2 text-sm">
               <p className="font-semibold text-slate-700 mb-2">Order Summary</p>
               {cart.map((i) => (
@@ -282,21 +523,123 @@ export default function StorefrontPage() {
                   <span>{formatNaira(i.product.pricePerCrate * i.quantity)}</span>
                 </div>
               ))}
-              <div className="border-t border-slate-200 pt-2 font-bold flex justify-between">
-                <span>Total Payable</span>
-                <span>{formatNaira(subtotal + deposit)}</span>
+              <div className="border-t border-slate-200 pt-2 space-y-1">
+                <div className="flex justify-between text-slate-500"><span>Bottle Deposit</span><span>{formatNaira(deposit)}</span></div>
+                <div className="flex justify-between font-bold text-base"><span>Total Payable</span><span className="text-[#1e3a5f]">{formatNaira(subtotal + deposit)}</span></div>
               </div>
             </div>
-            <div className="flex gap-3">
-              <button onClick={() => setShowCheckout(false)} className="flex-1 border border-slate-300 text-slate-700 py-2.5 rounded-xl text-sm">Back to Cart</button>
-              <button
-                onClick={placeOrder}
-                disabled={submitting || !order.name || !order.phone || !order.address}
-                className="flex-1 bg-[#1e3a5f] text-white py-2.5 rounded-xl font-semibold hover:bg-blue-800 disabled:opacity-60"
-              >
-                {submitting ? "Placing Order..." : "Place Order"}
-              </button>
-            </div>
+
+            {customer ? (
+              /* Authenticated checkout */
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-700">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  Signed in as <strong>{customer.name}</strong>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Delivery Address *</label>
+                  <input
+                    type="text"
+                    value={deliveryAddress}
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    placeholder="Enter full delivery address"
+                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Payment Method</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {([
+                      { value: "PAYSTACK_CARD", label: "Card / Transfer", sub: "Powered by Paystack" },
+                      { value: "BANK_TRANSFER", label: "Bank Transfer", sub: "Manual bank payment" },
+                    ] as const).map((m) => (
+                      <button
+                        key={m.value}
+                        onClick={() => setPaymentMethod(m.value)}
+                        className={`p-3 rounded-xl border-2 text-left transition-colors ${paymentMethod === m.value ? "border-[#1e3a5f] bg-blue-50" : "border-slate-200 hover:border-slate-300"}`}
+                      >
+                        <p className="font-medium text-slate-800 text-sm">{m.label}</p>
+                        <p className="text-xs text-slate-400">{m.sub}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {paymentMethod === "BANK_TRANSFER" && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+                    <p className="font-semibold mb-1">Bank Transfer Details</p>
+                    <p>Bank: First Bank of Nigeria</p>
+                    <p>Account Name: Aim-Hye Integrated Concepts Limited</p>
+                    <p>Account Number: <strong>3012345678</strong></p>
+                    <p className="text-xs text-blue-600 mt-2">Your order number will be shown after placing the order — use it as the narration.</p>
+                  </div>
+                )}
+
+                {customer.hasPin && paymentMethod === "PAYSTACK_CARD" && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Transaction PIN (for security)</label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={4}
+                      value={pinInput}
+                      onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ""))}
+                      placeholder="••••"
+                      className="w-32 border border-slate-300 rounded-xl px-4 py-2 text-center text-xl tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <button onClick={() => { setShowCheckout(false); setShowCart(true); }} className="flex-1 border border-slate-300 text-slate-700 py-2.5 rounded-xl text-sm">Back to Cart</button>
+                  <button
+                    onClick={placeAuthOrder}
+                    disabled={submitting || !deliveryAddress || (customer.hasPin && paymentMethod === "PAYSTACK_CARD" && pinInput.length < 4)}
+                    className="flex-1 bg-[#1c1c1e] text-white py-2.5 rounded-xl font-semibold hover:bg-[#2d2d2f] disabled:opacity-60"
+                  >
+                    {submitting ? "Processing..." : paymentMethod === "PAYSTACK_CARD" ? "Pay Now" : "Place Order"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Guest checkout */
+              <div className="space-y-3">
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
+                  <Link href="/account/login" className="font-semibold underline">Sign in</Link> for faster checkout, order tracking, and online payment.
+                </div>
+                {[
+                  { label: "Full Name *", key: "name", type: "text" },
+                  { label: "Phone Number *", key: "phone", type: "tel" },
+                  { label: "Delivery Address *", key: "address", type: "text" },
+                ].map((f) => (
+                  <div key={f.key}>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{f.label}</label>
+                    <input
+                      type={f.type}
+                      value={guestInfo[f.key as keyof typeof guestInfo]}
+                      onChange={(e) => setGuestInfo({ ...guestInfo, [f.key]: e.target.value })}
+                      className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                ))}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+                  <textarea value={guestInfo.notes} onChange={(e) => setGuestInfo({ ...guestInfo, notes: e.target.value })} className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none" rows={2} />
+                </div>
+                <div className="flex gap-3 pt-1">
+                  <button onClick={() => { setShowCheckout(false); setShowCart(true); }} className="flex-1 border border-slate-300 text-slate-700 py-2.5 rounded-xl text-sm">Back</button>
+                  <button
+                    onClick={placeGuestOrder}
+                    disabled={submitting || !guestInfo.name || !guestInfo.phone || !guestInfo.address}
+                    className="flex-1 bg-[#1c1c1e] text-white py-2.5 rounded-xl font-semibold hover:bg-[#2d2d2f] disabled:opacity-60"
+                  >
+                    {submitting ? "Placing Order..." : "Place Order"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -305,16 +648,29 @@ export default function StorefrontPage() {
       {orderPlaced && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center">
-            <div className="text-6xl mb-4">🎉</div>
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            </div>
             <h2 className="text-2xl font-bold text-slate-800 mb-2">Order Placed!</h2>
             <p className="text-slate-500 mb-4">Your order has been received and will be processed shortly.</p>
-            <div className="bg-green-50 rounded-xl p-4 mb-6">
+            <div className="bg-green-50 rounded-xl p-4 mb-4">
               <p className="text-sm text-slate-500">Order Number</p>
               <p className="text-2xl font-bold text-green-700">{orderPlaced.orderNo}</p>
               <p className="text-sm text-slate-500 mt-1">Total: <strong>{formatNaira(orderPlaced.total)}</strong></p>
             </div>
-            <p className="text-sm text-slate-400 mb-6">Save your order number. Our team will contact you to confirm and arrange delivery.</p>
-            <button onClick={() => setOrderPlaced(null)} className="w-full bg-[#1e3a5f] text-white py-3 rounded-xl font-semibold hover:bg-blue-800">Continue Shopping</button>
+            {orderPlaced.orderId && (
+              <a
+                href={`/api/invoices?orderId=${orderPlaced.orderId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full border border-slate-300 text-slate-700 py-2.5 rounded-xl text-sm hover:bg-slate-50 transition-colors mb-3"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                Download Invoice
+              </a>
+            )}
+            <p className="text-sm text-slate-400 mb-5">Our team will contact you to arrange delivery.</p>
+            <button onClick={() => setOrderPlaced(null)} className="w-full bg-[#1c1c1e] text-white py-3 rounded-xl font-semibold hover:bg-[#2d2d2f]">Continue Shopping</button>
           </div>
         </div>
       )}

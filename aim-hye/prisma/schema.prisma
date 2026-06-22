@@ -12,6 +12,7 @@ model Brewery {
   shortName String
   logoUrl   String?
   products  Product[]
+  purchaseOrders PurchaseOrder[]
   createdAt DateTime  @default(now())
 }
 
@@ -29,15 +30,21 @@ model Product {
   depositPerCrate Float   @default(0) // empty bottle deposit value per crate
   stockCrates    Int      @default(0)
   minStockCrates Int      @default(5)
+  packaging      String   @default("glass") // glass | can | pet
+  productFamily  String?                    // slug grouping variants, e.g. "star-lager"
   imageUrl       String?
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  orderItems       OrderItem[]
-  truckAllocations TruckAllocation[]
-  emptyReturns     EmptyReturn[]
-  stockLogs        StockLog[]
+  orderItems         OrderItem[]
+  truckAllocations   TruckAllocation[]
+  emptyReturns       EmptyReturn[]
+  stockLogs          StockLog[]
+  cartItems          CartItem[]
+  customerOrderItems CustomerOrderItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+  goodsReceiptItems  GoodsReceiptItem[]
 }
 
 model Customer {
@@ -223,4 +230,218 @@ model AdminUser {
   role      String   @default("STAFF") // ADMIN, STAFF
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
+
+  raisedPOs    PurchaseOrder[]   @relation("RaisedPOs")
+  approvedPOs  PurchaseOrder[]   @relation("ApprovedPOs")
+  purchasePayments PurchasePayment[]
+  goodsReceipts    GoodsReceipt[]
+}
+
+// Customer account system
+model CustomerAccount {
+  id            String    @id @default(cuid())
+  name          String
+  phone         String    @unique
+  email         String?   @unique
+  password      String?
+  pin           String?   // bcrypt-hashed 4-digit payment PIN
+  isActive      Boolean   @default(true)
+  emailVerified Boolean   @default(false)
+  phoneVerified Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  addresses    CustomerAddress[]
+  cartItems    CartItem[]
+  orders       CustomerOrder[]
+  otps         OTP[]
+  savedCards   SavedCard[]
+  webAuthnCreds WebAuthnCredential[]
+  payments     Payment[]
+}
+
+model CustomerAddress {
+  id         String          @id @default(cuid())
+  customerId String
+  customer   CustomerAccount @relation(fields: [customerId], references: [id])
+  label      String          @default("Home")
+  address    String
+  lga        String?
+  state      String?
+  isDefault  Boolean         @default(false)
+  createdAt  DateTime        @default(now())
+}
+
+model CartItem {
+  id         String          @id @default(cuid())
+  customerId String
+  customer   CustomerAccount @relation(fields: [customerId], references: [id])
+  productId  String
+  product    Product         @relation(fields: [productId], references: [id])
+  quantity   Int
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@unique([customerId, productId])
+}
+
+model SavedCard {
+  id           String          @id @default(cuid())
+  customerId   String
+  customer     CustomerAccount @relation(fields: [customerId], references: [id])
+  paystackAuth String
+  last4        String
+  brand        String
+  expMonth     String
+  expYear      String
+  email        String
+  isDefault    Boolean         @default(false)
+  createdAt    DateTime        @default(now())
+}
+
+model OTP {
+  id         String          @id @default(cuid())
+  customerId String
+  customer   CustomerAccount @relation(fields: [customerId], references: [id])
+  code       String
+  purpose    String          // LOGIN, PAYMENT, PIN_RESET, REGISTER
+  expiresAt  DateTime
+  usedAt     DateTime?
+  attempts   Int             @default(0)
+  createdAt  DateTime        @default(now())
+}
+
+model WebAuthnCredential {
+  id           String          @id @default(cuid())
+  customerId   String
+  customer     CustomerAccount @relation(fields: [customerId], references: [id])
+  credentialId String          @unique
+  publicKey    String
+  counter      Int             @default(0)
+  deviceType   String?
+  aaguid       String?
+  createdAt    DateTime        @default(now())
+}
+
+model CustomerOrder {
+  id              String          @id @default(cuid())
+  orderNo         String          @unique
+  customerId      String
+  customer        CustomerAccount @relation(fields: [customerId], references: [id])
+  status          String          @default("PENDING")
+  totalAmount     Float
+  depositAmount   Float           @default(0)
+  deliveryAddress String
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  items    CustomerOrderItem[]
+  payment  Payment?
+}
+
+model CustomerOrderItem {
+  id        String        @id @default(cuid())
+  orderId   String
+  order     CustomerOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product       @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Float
+  subtotal  Float
+}
+
+model Payment {
+  id          String          @id @default(cuid())
+  customerId  String
+  customer    CustomerAccount @relation(fields: [customerId], references: [id])
+  orderId     String          @unique
+  order       CustomerOrder   @relation(fields: [orderId], references: [id])
+  method      String          // PAYSTACK_CARD, PAYSTACK_TRANSFER, BANK_TRANSFER
+  status      String          @default("PENDING") // PENDING, SUCCESS, FAILED, REFUNDED
+  amount      Float
+  reference   String          @unique
+  paystackRef String?
+  bankProofUrl String?
+  verifiedAt  DateTime?
+  metadata    String?         // JSON string for extra data
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+// ─── Procurement / Purchase Order System ────────────────────────────────────
+
+model PurchaseOrder {
+  id         String   @id @default(cuid())
+  poNumber   String   @unique  // e.g. PO-20240618-001
+  breweryId  String
+  brewery    Brewery  @relation(fields: [breweryId], references: [id])
+  raisedById String   // AdminUser id
+  raisedBy   AdminUser @relation("RaisedPOs", fields: [raisedById], references: [id])
+  approvedById String?
+  approvedBy   AdminUser? @relation("ApprovedPOs", fields: [approvedById], references: [id])
+
+  status      String  @default("DRAFT")
+  // DRAFT → PENDING_APPROVAL → APPROVED → PAID → PARTIALLY_RECEIVED → RECEIVED → CLOSED → CANCELLED
+
+  notes       String?
+  expectedAt  DateTime?  // expected delivery date
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  items        PurchaseOrderItem[]
+  payment      PurchasePayment?
+  receipts     GoodsReceipt[]
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(cuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product       @relation(fields: [productId], references: [id])
+  quantityOrdered Int
+  unitCost        Float         // cost per crate from brewery
+  totalCost       Float
+}
+
+model PurchasePayment {
+  id              String        @id @default(cuid())
+  purchaseOrderId String        @unique
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  amountPaid      Float
+  bankName        String?
+  accountName     String?
+  transferRef     String?       // bank transfer reference / teller number
+  paidAt          DateTime
+  paidById        String        // AdminUser id of who recorded the payment
+  paidBy          AdminUser     @relation(fields: [paidById], references: [id])
+  notes           String?
+  createdAt       DateTime      @default(now())
+}
+
+model GoodsReceipt {
+  id              String        @id @default(cuid())
+  receiptNumber   String        @unique  // GR-20240618-001
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  receivedById    String        // AdminUser who recorded the receipt
+  receivedBy      AdminUser     @relation(fields: [receivedById], references: [id])
+  receivedAt      DateTime      @default(now())
+  notes           String?
+  isPartial       Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+
+  items  GoodsReceiptItem[]
+}
+
+model GoodsReceiptItem {
+  id             String       @id @default(cuid())
+  goodsReceiptId String
+  goodsReceipt   GoodsReceipt @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product      @relation(fields: [productId], references: [id])
+  quantityOrdered   Int
+  quantityReceived  Int
+  quantityShortfall Int       @default(0)  // ordered - received
 }

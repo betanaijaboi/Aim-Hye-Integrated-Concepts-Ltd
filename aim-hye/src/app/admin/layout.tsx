@@ -7,11 +7,14 @@ import Link from "next/link";
 const NAV = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "📊" },
   { href: "/admin/orders", label: "Orders", icon: "🛒" },
+  { href: "/admin/payments", label: "Payments", icon: "💳" },
+  { href: "/admin/procurement", label: "Procurement", icon: "🏭" },
   { href: "/admin/stock", label: "Stock", icon: "📦" },
   { href: "/admin/trucks", label: "Trucks & Crew", icon: "🚛" },
   { href: "/admin/drivers", label: "Drivers & Salesboys", icon: "👤" },
   { href: "/admin/empties", label: "Empties", icon: "🍺" },
   { href: "/admin/customers", label: "Customers", icon: "👥" },
+  { href: "/admin/export", label: "Export (Peachtree)", icon: "📤" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

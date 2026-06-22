@@ -40,9 +40,10 @@ export async function POST(req: NextRequest) {
     where: { id: { in: items.map((i: { productId: string }) => i.productId) } },
   });
 
-  const orderItems = items.map((item: { productId: string; quantity: number }) => {
+  const orderItems = items.map((item: { productId: string; quantity: number; unit?: "bottle" | "crate" }) => {
     const product = products.find((p) => p.id === item.productId)!;
-    const unitPrice = product.pricePerCrate;
+    const unit = item.unit ?? "crate";
+    const unitPrice = unit === "bottle" ? product.pricePerBottle : product.pricePerCrate;
     return {
       productId: item.productId,
       quantity: item.quantity,
@@ -52,7 +53,8 @@ export async function POST(req: NextRequest) {
   });
 
   const totalAmount = orderItems.reduce((s: number, i: { subtotal: number }) => s + i.subtotal, 0);
-  const depositAmount = items.reduce((s: number, item: { productId: string; quantity: number }) => {
+  const depositAmount = items.reduce((s: number, item: { productId: string; quantity: number; unit?: "bottle" | "crate" }) => {
+    if ((item.unit ?? "crate") === "bottle") return s;
     const p = products.find((p) => p.id === item.productId)!;
     return s + p.depositPerCrate * item.quantity;
   }, 0);
