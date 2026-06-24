@@ -663,7 +663,10 @@ export default function StorefrontPage() {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <p className="text-slate-500 text-xs">Bank</p>
-                        <p className="font-semibold text-slate-800 text-xs">First City Monument Bank</p>
+                        <div className="flex items-center gap-2">
+                          <Image src="/uploads/fcmb-logo.png" alt="FCMB" width={20} height={20} className="rounded" />
+                          <p className="font-semibold text-slate-800 text-xs">First City Monument Bank</p>
+                        </div>
                       </div>
                       <div className="flex items-center justify-between">
                         <p className="text-slate-500 text-xs">Account Name</p>
