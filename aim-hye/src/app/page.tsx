@@ -5,6 +5,7 @@ import { formatNaira } from "@/lib/utils";
 import { getProductImage, CATEGORY_GRADIENTS } from "@/lib/productImages";
 import { useCart, CartProduct } from "@/lib/useCart";
 import Link from "next/link";
+import { AimHyeLogo } from "@/components/AimHyeLogo";
 
 type Product = CartProduct; // includes packaging, productFamily
 interface Customer { id: string; name: string; phone: string; email?: string; hasPin: boolean }
@@ -232,7 +233,7 @@ export default function StorefrontPage() {
               <div className="relative w-20 h-20 rounded-2xl overflow-hidden bg-white shadow-2xl mb-4">
                 <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-1" />
               </div>
-              <p className="font-black text-2xl text-white tracking-tight">AIM-HYE</p>
+              <AimHyeLogo className="h-10 w-auto text-white" />
               <p className="text-sm mt-0.5" style={{ color: "#e0302a" }}>Integrated Concepts Limited</p>
             </div>
             <p className="text-white/70 text-center text-sm mb-5">Select your nearest branch to continue</p>
@@ -286,7 +287,7 @@ export default function StorefrontPage() {
               <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-0.5" />
             </div>
             <div>
-              <p className="font-bold text-white text-base leading-tight tracking-tight">AIM-HYE</p>
+              <AimHyeLogo className="h-5 w-auto text-white" />
               <p className="text-[11px] leading-tight" style={{ color: "#e0302a" }}>Integrated Concepts Limited</p>
             </div>
           </div>
@@ -534,7 +535,10 @@ export default function StorefrontPage() {
           <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-white mx-auto mb-3 shadow">
             <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-1" />
           </div>
-          <p className="font-bold text-base tracking-tight">AIM-HYE <span style={{ color: "#e0302a" }}>Integrated Concepts Limited</span></p>
+          <div className="flex flex-col items-center gap-1">
+            <AimHyeLogo className="h-6 w-auto text-white" />
+            <span className="text-sm tracking-wide" style={{ color: "#e0302a" }}>Integrated Concepts Limited</span>
+          </div>
           <p className="text-white/40 text-xs mt-2">Authorized distributor — Champion · International · Nigerian · Guinness Breweries</p>
           <p className="text-white/30 text-xs mt-1">Orders processed within 24 hours · Delivery available in your area</p>
           <div className="mt-5 flex justify-center gap-5 text-xs text-white/40">

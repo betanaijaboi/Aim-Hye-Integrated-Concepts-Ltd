@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { AimHyeLogo } from "@/components/AimHyeLogo";
 
 interface Customer {
   id: string;
@@ -274,7 +275,7 @@ export default function AccountPage() {
             <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-white flex items-center justify-center">
               <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-0.5" />
             </div>
-            <span className="text-white text-xl tracking-wide" style={{ fontFamily: "var(--font-bebas)" }}>AIM-HYE</span>
+            <AimHyeLogo className="h-5 w-auto text-white" />
           </Link>
           <p className="text-white font-semibold text-sm">My Account</p>
           <button onClick={handleLogout} className="text-white/50 hover:text-white text-sm transition-colors">Sign Out</button>

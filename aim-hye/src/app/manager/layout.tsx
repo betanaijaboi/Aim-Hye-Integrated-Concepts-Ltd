@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { AimHyeLogo } from "@/components/AimHyeLogo";
 
 const NAV = [
   { href: "/manager", label: "Dashboard", icon: "M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" },
@@ -51,7 +52,7 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
             <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-0.5" />
           </div>
           <div>
-            <p className="text-lg tracking-wide leading-tight text-white" style={{ fontFamily: "var(--font-bebas)" }}>AIM-HYE</p>
+            <AimHyeLogo className="h-5 w-auto text-white" />
             <p className="text-[11px] leading-tight" style={{ color: "#e0302a" }}>Manager Panel</p>
           </div>
         </div>

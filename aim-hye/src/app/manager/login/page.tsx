@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { AimHyeLogo } from "@/components/AimHyeLogo";
 
 export default function ManagerLoginPage() {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function ManagerLoginPage() {
           <div className="relative w-20 h-20 rounded-2xl overflow-hidden bg-white shadow-lg mb-4">
             <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-1" />
           </div>
-          <p className="text-3xl tracking-wide" style={{ color: "#1c1c1e", fontFamily: "var(--font-bebas)" }}>AIM-HYE</p>
+          <AimHyeLogo className="h-8 w-auto" style={{ color: "#0A0F1A" }} />
           <p className="text-sm font-medium mt-0.5" style={{ color: "#e0302a" }}>Manager Portal</p>
         </div>
 
