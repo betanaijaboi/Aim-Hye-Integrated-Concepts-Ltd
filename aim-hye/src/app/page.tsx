@@ -38,6 +38,7 @@ export default function StorefrontPage() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [branch, setBranch] = useState<string | null>(null);
   const [showBranchPicker, setShowBranchPicker] = useState(false);
+  const [hoveredBranch, setHoveredBranch] = useState<string | null>(null);
   // Guest checkout fields
   const [guestInfo, setGuestInfo] = useState({ name: "", phone: "", address: "", notes: "" });
   // Auth checkout
@@ -236,28 +237,41 @@ export default function StorefrontPage() {
             </div>
             <p className="text-white/70 text-center text-sm mb-5">Select your nearest branch to continue</p>
             <div className="space-y-3">
-              {BRANCHES.map((b) => (
-                <button
-                  key={b.key}
-                  onClick={() => selectBranch(b.key)}
-                  className="w-full bg-white rounded-2xl p-5 text-left hover:scale-[1.02] transition-transform shadow-xl"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#1c1c1e" }}>
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              {BRANCHES.map((b) => {
+                const isHovered = hoveredBranch === b.key;
+                const otherHovered = hoveredBranch !== null && hoveredBranch !== b.key;
+                return (
+                  <button
+                    key={b.key}
+                    onClick={() => selectBranch(b.key)}
+                    onMouseEnter={() => setHoveredBranch(b.key)}
+                    onMouseLeave={() => setHoveredBranch(null)}
+                    className="w-full rounded-2xl p-5 text-left shadow-xl transition-all duration-200"
+                    style={{
+                      background: isHovered ? "#1c1c1e" : otherHovered ? "rgba(255,255,255,0.5)" : "#fff",
+                      transform: isHovered ? "scale(1.02)" : "scale(1)",
+                    }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div
+                        className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-200"
+                        style={{ background: isHovered ? "#e0302a" : "#1c1c1e" }}
+                      >
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="font-bold transition-colors duration-200" style={{ color: isHovered ? "#fff" : otherHovered ? "rgba(30,30,30,0.4)" : "#1e293b" }}>{b.label}</p>
+                        <p className="text-xs mt-0.5 transition-colors duration-200" style={{ color: isHovered ? "rgba(255,255,255,0.6)" : otherHovered ? "rgba(30,30,30,0.25)" : "#94a3b8" }}>{b.sub}</p>
+                      </div>
+                      <svg className="w-5 h-5 ml-auto transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: isHovered ? "rgba(255,255,255,0.5)" : otherHovered ? "rgba(30,30,30,0.2)" : "#cbd5e1" }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </div>
-                    <div>
-                      <p className="font-bold text-slate-800">{b.label}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">{b.sub}</p>
-                    </div>
-                    <svg className="w-5 h-5 text-slate-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
