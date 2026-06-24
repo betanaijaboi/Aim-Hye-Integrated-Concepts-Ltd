@@ -14,6 +14,7 @@ const NAV = [
   { href: "/admin/drivers", label: "Drivers & Salesboys", icon: "👤" },
   { href: "/admin/empties", label: "Empties", icon: "🍺" },
   { href: "/admin/customers", label: "Customers", icon: "👥" },
+  { href: "/admin/changes", label: "Change Requests", icon: "🔄" },
   { href: "/admin/export", label: "Export (Peachtree)", icon: "📤" },
 ];
 

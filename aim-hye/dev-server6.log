@@ -1,0 +1,13 @@
+▲ Next.js 16.2.9 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.87:3000
+- Environments: .env
+✓ Ready in 416ms
+
+[OTP SMS] To: 08011111111 | Purpose: REGISTER | Code: 155435
+ POST /api/customer/register 201 in 604ms (next.js: 304ms, application-code: 300ms)
+[OTP SMS] To: 08011111111 | Purpose: LOGIN | Code: 201219
+ POST /api/customer/login 200 in 53ms (next.js: 33ms, application-code: 20ms)
+ GET /api/breweries 200 in 497ms (next.js: 471ms, application-code: 26ms)
+ GET /api/procurement 401 in 2.2s (next.js: 2.2s, application-code: 40ms)
+[?25h

@@ -22,6 +22,19 @@ async function main() {
     },
   });
 
+  // Manager account
+  const managerPw = await bcrypt.hash("Manager1234!", 10);
+  await prisma.adminUser.upsert({
+    where: { email: "manager@aimhye.com" },
+    update: {},
+    create: {
+      email: "manager@aimhye.com",
+      name: "Warehouse Manager",
+      password: managerPw,
+      role: "MANAGER",
+    },
+  });
+
   // Breweries
   const champion = await prisma.brewery.upsert({
     where: { name: "Champion Breweries" },

@@ -45,6 +45,7 @@ model Product {
   customerOrderItems CustomerOrderItem[]
   purchaseOrderItems PurchaseOrderItem[]
   goodsReceiptItems  GoodsReceiptItem[]
+  changeRequests     ManagerChangeRequest[]
 }
 
 model Customer {
@@ -227,14 +228,35 @@ model AdminUser {
   email     String   @unique
   name      String
   password  String
-  role      String   @default("STAFF") // ADMIN, STAFF
+  role      String   @default("STAFF") // ADMIN, STAFF, MANAGER
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  raisedPOs    PurchaseOrder[]   @relation("RaisedPOs")
-  approvedPOs  PurchaseOrder[]   @relation("ApprovedPOs")
+  raisedPOs        PurchaseOrder[]       @relation("RaisedPOs")
+  approvedPOs      PurchaseOrder[]       @relation("ApprovedPOs")
   purchasePayments PurchasePayment[]
   goodsReceipts    GoodsReceipt[]
+  changeRequests   ManagerChangeRequest[] @relation("ManagerRequests")
+  reviewedChanges  ManagerChangeRequest[] @relation("ReviewedChanges")
+}
+
+model ManagerChangeRequest {
+  id            String     @id @default(cuid())
+  requestedById String
+  requestedBy   AdminUser  @relation("ManagerRequests", fields: [requestedById], references: [id])
+  type          String     // STOCK_UPDATE | PRICE_CHANGE
+  productId     String
+  product       Product    @relation(fields: [productId], references: [id])
+  currentValue  Float
+  proposedValue Float
+  reason        String
+  status        String     @default("PENDING") // PENDING | APPROVED | REJECTED
+  reviewedById  String?
+  reviewedBy    AdminUser? @relation("ReviewedChanges", fields: [reviewedById], references: [id])
+  reviewNote    String?
+  reviewedAt    DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 }
 
 // Customer account system
