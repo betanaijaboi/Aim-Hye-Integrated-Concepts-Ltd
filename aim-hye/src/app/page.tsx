@@ -416,7 +416,7 @@ export default function StorefrontPage() {
           style={{ opacity: loadingProducts ? 0.3 : 1, pointerEvents: loadingProducts ? "none" : "auto" }}
         >
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 mt-6">
-          {productGroups.map(({ rep: p, all, sizes, hasVariants }) => {
+          {productGroups.map(({ rep: p, all, sizes, hasVariants }, gridIndex) => {
                 const inCart = cart.find((i) => i.product.id === p.id && i.unit === "crate");
                 const imgSrc = p.imageUrl || getProductImage(p.sku);
                 const grad = CATEGORY_GRADIENTS[p.category] ?? CATEGORY_GRADIENTS.lager;
@@ -437,6 +437,7 @@ export default function StorefrontPage() {
                           alt={p.name}
                           fill
                           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                          priority={gridIndex < 8}
                           className={`group-hover:scale-105 transition-transform duration-300 ${["INTL-FLYF-33","INTL-CASTL-33","INTL-BUD-33","INTL-BUDR-33","GUIN-SATZ-60"].includes(p.sku) ? "object-cover" : "object-contain p-2 drop-shadow-lg"}`}
                           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />

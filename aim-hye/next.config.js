@@ -1,11 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "www.nbplc.com" },
-      { protocol: "https", hostname: "assets.untappd.com" },
-      { protocol: "https", hostname: "**.untappd.com" },
-    ],
+    // Cache optimized images for 7 days (default is 60s)
+    minimumCacheTTL: 604800,
+    // All product images are now local; keep remote patterns in case any are added later
+    remotePatterns: [],
   },
 };
 

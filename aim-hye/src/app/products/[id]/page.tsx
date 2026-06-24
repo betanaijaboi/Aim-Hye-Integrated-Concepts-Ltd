@@ -147,6 +147,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 src={imgSrc}
                 alt={product.name}
                 fill
+                priority
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-contain p-6 drop-shadow-2xl"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
