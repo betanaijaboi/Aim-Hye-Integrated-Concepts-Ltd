@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { formatNaira } from "@/lib/utils";
 import { getProductImage, CATEGORY_GRADIENTS } from "@/lib/productImages";
 import { useCart, CartProduct } from "@/lib/useCart";
+import { AimHyeLogo } from "@/components/AimHyeLogo";
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -95,22 +96,30 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-[#1e3a5f] text-white sticky top-0 z-40 shadow-lg">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      {/* Header — matches storefront style */}
+      <header className="sticky top-0 z-40 border-b border-white/10" style={{ background: "rgba(28,28,30,0.92)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+        <div className="max-w-6xl mx-auto px-5 py-3 flex items-center justify-between">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-blue-200 hover:text-white transition-colors"
+            className="flex items-center gap-2 transition-colors"
+            style={{ color: "rgba(255,255,255,0.6)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.6)")}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span className="text-sm font-medium">Back to Store</span>
+            <span className="text-sm font-medium hidden sm:inline">Back to Store</span>
           </button>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center font-bold text-sm">A</div>
-            <span className="font-bold text-sm hidden sm:inline">Aim-Hye</span>
-          </div>
+          <Link href="/" className="flex items-center gap-3">
+            <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-white flex items-center justify-center shadow">
+              <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-0.5" />
+            </div>
+            <div className="hidden sm:block">
+              <AimHyeLogo className="h-4 w-auto text-white" />
+              <p className="text-[10px] leading-tight" style={{ color: "#e0302a" }}>Integrated Concepts Limited</p>
+            </div>
+          </Link>
           <Link href="/" className="relative">
             <svg className="w-6 h-6 text-blue-200 hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
