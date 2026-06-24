@@ -7,10 +7,13 @@ export async function GET(req: NextRequest) {
   const category = searchParams.get("category");
   const active = searchParams.get("active");
 
+  const branch = searchParams.get("branch");
+
   const where: Record<string, unknown> = {};
   if (breweryId) where.breweryId = breweryId;
   if (category) where.category = category;
   if (active !== null) where.isActive = active === "true";
+  if (branch) where.branch = branch;
 
   const products = await prisma.product.findMany({
     where,

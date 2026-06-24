@@ -47,7 +47,13 @@ export default function ManagerDashboard() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    fetch("/api/products?active=true").then((r) => r.json()).then(setProducts);
+    // Fetch manager's branch first, then load products for that branch
+    fetch("/api/manager/me")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        const b = d?.branch ?? "IKOT_EKPENE";
+        fetch(`/api/products?active=true&branch=${b}`).then((r) => r.json()).then(setProducts);
+      });
     loadRecent();
   }, []);
 

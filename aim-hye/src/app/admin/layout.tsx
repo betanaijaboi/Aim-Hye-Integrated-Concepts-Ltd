@@ -1,8 +1,15 @@
 "use client";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, createContext, useContext } from "react";
 import Link from "next/link";
+
+export type AdminBranch = "IKOT_EKPENE" | "ITAM";
+export const BranchContext = createContext<{ branch: AdminBranch; setBranch: (b: AdminBranch) => void }>({
+  branch: "IKOT_EKPENE",
+  setBranch: () => {},
+});
+export function useAdminBranch() { return useContext(BranchContext); }
 
 const NAV = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "📊" },
@@ -23,6 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [branch, setBranch] = useState<AdminBranch>("IKOT_EKPENE");
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -42,6 +50,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!session) return null;
 
   return (
+    <BranchContext.Provider value={{ branch, setBranch }}>
     <div className="flex h-screen overflow-hidden bg-slate-50">
       {/* Sidebar */}
       <aside
@@ -107,6 +116,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </svg>
           </button>
           <div className="flex items-center gap-3">
+            {/* Branch switcher */}
+            <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+              {(["IKOT_EKPENE", "ITAM"] as const).map((b) => (
+                <button
+                  key={b}
+                  onClick={() => setBranch(b)}
+                  className="px-3 py-1 rounded-md text-xs font-semibold transition-all"
+                  style={branch === b ? { background: "#1c1c1e", color: "#fff" } : { color: "#64748b" }}
+                >
+                  {b === "IKOT_EKPENE" ? "Ikot Ekpene" : "Itam"}
+                </button>
+              ))}
+            </div>
             <Link
               href="/"
               target="_blank"
@@ -122,5 +144,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
+    </BranchContext.Provider>
   );
 }

@@ -10,5 +10,5 @@ export async function GET() {
   if (!user || user.role !== "MANAGER")
     return NextResponse.json({ error: "Not authorized" }, { status: 403 });
 
-  return NextResponse.json({ id: user.id, name: user.name, email: user.email });
+  return NextResponse.json({ id: user.id, name: user.name, email: user.email, branch: user.branch });
 }

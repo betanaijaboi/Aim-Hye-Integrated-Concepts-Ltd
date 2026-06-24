@@ -13,6 +13,20 @@ const BREWERIES = ["All", "Champion Breweries", "International Breweries", "Nige
 const CATS = ["All", "lager", "stout", "malt", "rtd", "spirits"];
 const catLabels: Record<string, string> = { lager: "Lager", stout: "Stout", malt: "Malt", rtd: "RTD", spirits: "Spirits" };
 
+const BRANCHES = [
+  { key: "IKOT_EKPENE", label: "Ikot Ekpene Branch", sub: "Ikot Ekpene, Akwa Ibom" },
+  { key: "ITAM",        label: "Itam Branch",         sub: "Itam, Uyo, Akwa Ibom" },
+] as const;
+
+function getBranchCookie(): string | null {
+  if (typeof document === "undefined") return null;
+  const m = document.cookie.match(/(?:^|;\s*)aim_branch=([^;]+)/);
+  return m ? m[1] : null;
+}
+function setBranchCookie(branch: string) {
+  document.cookie = `aim_branch=${branch};path=/;max-age=${60 * 60 * 24 * 30}`;
+}
+
 export default function StorefrontPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const { cart, addToCart, setItem, clearCart, cartCount, subtotal, deposit } = useCart();
@@ -22,6 +36,8 @@ export default function StorefrontPage() {
   const [showCart, setShowCart] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [customer, setCustomer] = useState<Customer | null>(null);
+  const [branch, setBranch] = useState<string | null>(null);
+  const [showBranchPicker, setShowBranchPicker] = useState(false);
   // Guest checkout fields
   const [guestInfo, setGuestInfo] = useState({ name: "", phone: "", address: "", notes: "" });
   // Auth checkout
@@ -33,14 +49,30 @@ export default function StorefrontPage() {
   const [checkoutError, setCheckoutError] = useState("");
 
   useEffect(() => {
-    fetch("/api/products?active=true").then((r) => r.json()).then((data: Product[]) =>
-      setProducts(data.filter((p) => p.stockCrates > 0))
-    );
-    // Check if customer is logged in
+    const saved = getBranchCookie();
+    if (saved) {
+      setBranch(saved);
+    } else {
+      setShowBranchPicker(true);
+    }
     fetch("/api/customer/me")
       .then((r) => r.ok ? r.json() : null)
       .then((data) => { if (data?.customer) setCustomer(data.customer); });
   }, []);
+
+  useEffect(() => {
+    if (!branch) return;
+    fetch(`/api/products?active=true&branch=${branch}`).then((r) => r.json()).then((data: Product[]) =>
+      setProducts(data.filter((p) => p.stockCrates > 0))
+    );
+  }, [branch]);
+
+  function selectBranch(b: string) {
+    setBranchCookie(b);
+    setBranch(b);
+    setShowBranchPicker(false);
+    setProducts([]);
+  }
 
   const filtered = products.filter((p) => {
     const matchBrew = brewery === "All" || p.brewery.name === brewery;
@@ -184,10 +216,52 @@ export default function StorefrontPage() {
     }
   }, [cart, customer, deliveryAddress, paymentMethod, pinInput]);
 
+  const branchInfo = BRANCHES.find((b) => b.key === branch);
+
   return (
     <div className="min-h-screen" style={{ background: "#f5f5f7" }}>
       {/* Paystack script */}
       <script async src="https://js.paystack.co/v1/inline.js" />
+
+      {/* Branch picker overlay */}
+      {showBranchPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
+          <div className="w-full max-w-sm">
+            <div className="flex flex-col items-center mb-8">
+              <div className="relative w-20 h-20 rounded-2xl overflow-hidden bg-white shadow-2xl mb-4">
+                <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-1" />
+              </div>
+              <p className="font-black text-2xl text-white tracking-tight">AIM-HYE</p>
+              <p className="text-sm mt-0.5" style={{ color: "#e0302a" }}>Integrated Concepts Limited</p>
+            </div>
+            <p className="text-white/70 text-center text-sm mb-5">Select your nearest branch to continue</p>
+            <div className="space-y-3">
+              {BRANCHES.map((b) => (
+                <button
+                  key={b.key}
+                  onClick={() => selectBranch(b.key)}
+                  className="w-full bg-white rounded-2xl p-5 text-left hover:scale-[1.02] transition-transform shadow-xl"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#1c1c1e" }}>
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-800">{b.label}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{b.sub}</p>
+                    </div>
+                    <svg className="w-5 h-5 text-slate-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-white/10" style={{ background: "rgba(28,28,30,0.92)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
@@ -202,6 +276,22 @@ export default function StorefrontPage() {
               <p className="text-[11px] leading-tight" style={{ color: "#e0302a" }}>Integrated Concepts Limited</p>
             </div>
           </div>
+          {/* Branch pill */}
+          {branchInfo && (
+            <button
+              onClick={() => setShowBranchPicker(true)}
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all border border-white/20 hover:border-white/40"
+              style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)" }}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              {branchInfo.label}
+              <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          )}
           {/* Nav right */}
           <div className="flex items-center gap-3">
             {customer ? (

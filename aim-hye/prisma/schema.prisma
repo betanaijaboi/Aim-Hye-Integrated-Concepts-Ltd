@@ -32,6 +32,7 @@ model Product {
   minStockCrates Int      @default(5)
   packaging      String   @default("glass") // glass | can | pet
   productFamily  String?                    // slug grouping variants, e.g. "star-lager"
+  branch         String   @default("IKOT_EKPENE") // IKOT_EKPENE | ITAM
   imageUrl       String?
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
@@ -229,6 +230,7 @@ model AdminUser {
   name      String
   password  String
   role      String   @default("STAFF") // ADMIN, STAFF, MANAGER
+  branch    String?  // IKOT_EKPENE | ITAM — required for MANAGER role
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
@@ -247,6 +249,7 @@ model ManagerChangeRequest {
   type          String     // STOCK_UPDATE | PRICE_CHANGE
   productId     String
   product       Product    @relation(fields: [productId], references: [id])
+  branch        String     @default("IKOT_EKPENE") // IKOT_EKPENE | ITAM
   currentValue  Float
   proposedValue Float
   reason        String
@@ -351,6 +354,7 @@ model CustomerOrder {
   customerId      String
   customer        CustomerAccount @relation(fields: [customerId], references: [id])
   status          String          @default("PENDING")
+  branch          String          @default("IKOT_EKPENE") // IKOT_EKPENE | ITAM
   totalAmount     Float
   depositAmount   Float           @default(0)
   deliveryAddress String

@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
       requestedById: session.id,
       type,
       productId,
+      branch: session.branch,
       currentValue,
       proposedValue,
       reason: reason.trim(),

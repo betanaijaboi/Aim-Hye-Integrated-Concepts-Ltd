@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { formatNaira } from "@/lib/utils";
+import { useAdminBranch } from "../layout";
 
 interface Product {
   id: string;
@@ -18,6 +19,7 @@ interface Product {
 }
 
 export default function StockPage() {
+  const { branch } = useAdminBranch();
   const [products, setProducts] = useState<Product[]>([]);
   const [edits, setEdits] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
@@ -27,8 +29,9 @@ export default function StockPage() {
   const [catFilter, setCatFilter] = useState("all");
 
   useEffect(() => {
-    fetch("/api/products?active=true").then((r) => r.json()).then(setProducts);
-  }, []);
+    fetch(`/api/products?active=true&branch=${branch}`).then((r) => r.json()).then(setProducts);
+    setEdits({});
+  }, [branch]);
 
   const breweries = [...new Set(products.map((p) => p.brewery.name))];
   const categories = [...new Set(products.map((p) => p.category))];

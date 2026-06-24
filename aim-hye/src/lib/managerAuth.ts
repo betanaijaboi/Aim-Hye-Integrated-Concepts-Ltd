@@ -10,6 +10,7 @@ export interface ManagerSession {
   name: string;
   email: string;
   role: string;
+  branch: string;
 }
 
 export async function createManagerToken(user: ManagerSession): Promise<string> {

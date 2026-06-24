@@ -9,7 +9,7 @@ const NAV = [
   { href: "/manager/changes", label: "My Requests", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
 ];
 
-interface ManagerInfo { name: string }
+interface ManagerInfo { name: string; branch?: string }
 
 export default function ManagerLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -77,7 +77,14 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
 
         <div className="p-4 border-t border-white/10">
           {manager && (
-            <p className="text-white/60 text-xs mb-3 truncate">{manager.name}</p>
+            <div className="mb-3">
+              <p className="text-white/70 text-xs truncate font-medium">{manager.name}</p>
+              {manager.branch && (
+                <p className="text-[10px] mt-0.5" style={{ color: "#e0302a" }}>
+                  {manager.branch === "IKOT_EKPENE" ? "Ikot Ekpene Branch" : "Itam Branch"}
+                </p>
+              )}
+            </div>
           )}
           <button onClick={handleLogout} className="flex items-center gap-2 text-white/40 hover:text-white/70 text-xs transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
