@@ -293,7 +293,6 @@ export default function StorefrontPage() {
                 );
               })}
             </div>
-          </div>
         </div>
       </div>
 
