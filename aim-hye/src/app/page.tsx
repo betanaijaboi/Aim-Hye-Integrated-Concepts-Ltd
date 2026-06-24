@@ -658,12 +658,27 @@ export default function StorefrontPage() {
                 </div>
 
                 {paymentMethod === "BANK_TRANSFER" && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
-                    <p className="font-semibold mb-1">Bank Transfer Details</p>
-                    <p>Bank: First Bank of Nigeria</p>
-                    <p>Account Name: Aim-Hye Integrated Concepts Limited</p>
-                    <p>Account Number: <strong>3012345678</strong></p>
-                    <p className="text-xs text-blue-600 mt-2">Your order number will be shown after placing the order — use it as the narration.</p>
+                  <div className="rounded-xl p-4 text-sm border" style={{ background: "rgba(28,28,30,0.04)", borderColor: "rgba(28,28,30,0.12)" }}>
+                    <p className="font-bold text-slate-800 mb-3">Transfer To</p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <p className="text-slate-500 text-xs">Bank</p>
+                        <p className="font-semibold text-slate-800 text-xs">First City Monument Bank</p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-slate-500 text-xs">Account Name</p>
+                        <p className="font-semibold text-slate-800 text-xs">Aim-Hye Integrated Concepts Limited</p>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-slate-200 pt-2 mt-2">
+                        <p className="text-slate-500 text-xs">Account Number</p>
+                        <p className="font-black text-lg tracking-widest" style={{ color: "#1c1c1e" }}>
+                          {branch === "ITAM" ? "2001190071" : "8982379016"}
+                        </p>
+                      </div>
+                      <p className="text-[11px] text-slate-400 pt-1">
+                        {branch === "ITAM" ? "Itam Branch" : "Ikot Ekpene Branch"} · Use your order number as narration after placing the order.
+                      </p>
+                    </div>
                   </div>
                 )}
 
