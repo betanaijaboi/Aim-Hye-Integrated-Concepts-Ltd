@@ -40,6 +40,7 @@ export default function StorefrontPage() {
   const [branch, setBranch] = useState<string | null>(null);
   const [showBranchPicker, setShowBranchPicker] = useState(false);
   const [hoveredBranch, setHoveredBranch] = useState<string | null>(null);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   // Guest checkout fields
   const [guestInfo, setGuestInfo] = useState({ name: "", phone: "", address: "", notes: "" });
   // Auth checkout
@@ -64,16 +65,19 @@ export default function StorefrontPage() {
 
   useEffect(() => {
     if (!branch) return;
-    fetch(`/api/products?active=true&branch=${branch}`).then((r) => r.json()).then((data: Product[]) =>
-      setProducts(data.filter((p) => p.stockCrates > 0))
-    );
+    setLoadingProducts(true);
+    fetch(`/api/products?active=true&branch=${branch}`)
+      .then((r) => r.json())
+      .then((data: Product[]) => {
+        setProducts(data.filter((p) => p.stockCrates > 0));
+        setLoadingProducts(false);
+      });
   }, [branch]);
 
   function selectBranch(b: string) {
     setBranchCookie(b);
     setBranch(b);
     setShowBranchPicker(false);
-    setProducts([]);
   }
 
   const filtered = products.filter((p) => {
@@ -225,10 +229,25 @@ export default function StorefrontPage() {
       {/* Paystack script */}
       <script async src="https://js.paystack.co/v1/inline.js" />
 
-      {/* Branch picker overlay */}
-      {showBranchPicker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
-          <div className="w-full max-w-sm">
+      {/* Branch picker overlay — always mounted, fades in/out */}
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style={{
+          background: "rgba(0,0,0,0.7)",
+          backdropFilter: showBranchPicker ? "blur(8px)" : "none",
+          WebkitBackdropFilter: showBranchPicker ? "blur(8px)" : "none",
+          opacity: showBranchPicker ? 1 : 0,
+          pointerEvents: showBranchPicker ? "auto" : "none",
+          transition: "opacity 0.3s ease",
+        }}
+      >
+        <div
+          className="w-full max-w-sm"
+          style={{
+            transform: showBranchPicker ? "translateY(0) scale(1)" : "translateY(20px) scale(0.96)",
+            transition: "transform 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+          }}
+        >
             <div className="flex flex-col items-center mb-8">
               <div className="relative w-20 h-20 rounded-2xl overflow-hidden bg-white shadow-2xl mb-4">
                 <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-1" />
@@ -276,7 +295,7 @@ export default function StorefrontPage() {
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-white/10" style={{ background: "rgba(28,28,30,0.92)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
@@ -392,6 +411,10 @@ export default function StorefrontPage() {
         </div>
 
         {/* Product grid — deduplicated by productFamily */}
+        <div
+          className="transition-opacity duration-300"
+          style={{ opacity: loadingProducts ? 0.3 : 1, pointerEvents: loadingProducts ? "none" : "auto" }}
+        >
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 mt-6">
           {productGroups.map(({ rep: p, all, sizes, hasVariants }) => {
                 const inCart = cart.find((i) => i.product.id === p.id && i.unit === "crate");
@@ -527,6 +550,7 @@ export default function StorefrontPage() {
             <p className="text-sm">Try adjusting your filters</p>
           </div>
         )}
+        </div>{/* end opacity wrapper */}
       </div>
 
       {/* Footer */}

@@ -1,7 +1,7 @@
 "use client";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useState, createContext, useContext } from "react";
+import { useEffect, useState, useRef, createContext, useContext } from "react";
 import Link from "next/link";
 
 export type AdminBranch = "IKOT_EKPENE" | "ITAM";
@@ -31,10 +31,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [branch, setBranch] = useState<AdminBranch>("IKOT_EKPENE");
+  const [switching, setSwitching] = useState(false);
+  // Skip the switching animation on mount (initial render + localStorage restore)
+  const skipSwitch = useRef(true);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
   }, [status, router]);
+
+  // Restore persisted branch from localStorage (no animation)
+  useEffect(() => {
+    const saved = localStorage.getItem("admin_branch") as AdminBranch | null;
+    if (saved === "IKOT_EKPENE" || saved === "ITAM") {
+      skipSwitch.current = true;
+      setBranch(saved);
+    }
+  }, []);
+
+  // Persist branch + trigger content fade (skip on first render)
+  useEffect(() => {
+    localStorage.setItem("admin_branch", branch);
+    if (skipSwitch.current) { skipSwitch.current = false; return; }
+    setSwitching(true);
+    const t = setTimeout(() => setSwitching(false), 220);
+    return () => clearTimeout(t);
+  }, [branch]);
 
   if (status === "loading") {
     return (
@@ -116,14 +137,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </svg>
           </button>
           <div className="flex items-center gap-3">
-            {/* Branch switcher */}
-            <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+            {/* Branch switcher — sliding indicator */}
+            <div className="relative flex items-center bg-slate-100 rounded-lg p-1 gap-0">
+              <div
+                className="absolute inset-y-1 rounded-md transition-all duration-200"
+                style={{
+                  background: "#1c1c1e",
+                  left: branch === "IKOT_EKPENE" ? 4 : "calc(50% + 2px)",
+                  width: "calc(50% - 6px)",
+                }}
+              />
               {(["IKOT_EKPENE", "ITAM"] as const).map((b) => (
                 <button
                   key={b}
                   onClick={() => setBranch(b)}
-                  className="px-3 py-1 rounded-md text-xs font-semibold transition-all"
-                  style={branch === b ? { background: "#1c1c1e", color: "#fff" } : { color: "#64748b" }}
+                  className="relative z-10 flex-1 px-3 py-1 rounded-md text-xs font-semibold transition-colors duration-200 whitespace-nowrap"
+                  style={{ color: branch === b ? "#fff" : "#64748b" }}
                 >
                   {b === "IKOT_EKPENE" ? "Ikot Ekpene" : "Itam"}
                 </button>
@@ -141,7 +170,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main
+          className="flex-1 overflow-y-auto p-6 transition-opacity duration-200"
+          style={{ opacity: switching ? 0 : 1 }}
+        >
+          {children}
+        </main>
       </div>
     </div>
     </BranchContext.Provider>
