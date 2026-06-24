@@ -51,7 +51,7 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
             <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-0.5" />
           </div>
           <div>
-            <p className="font-bold text-white text-sm leading-tight">AIM-HYE</p>
+            <p className="text-lg tracking-wide leading-tight text-white" style={{ fontFamily: "var(--font-bebas)" }}>AIM-HYE</p>
             <p className="text-[11px] leading-tight" style={{ color: "#e0302a" }}>Manager Panel</p>
           </div>
         </div>

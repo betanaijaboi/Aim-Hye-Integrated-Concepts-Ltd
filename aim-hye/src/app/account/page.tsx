@@ -274,7 +274,7 @@ export default function AccountPage() {
             <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-white flex items-center justify-center">
               <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-0.5" />
             </div>
-            <span className="text-white font-bold text-sm">AIM-HYE</span>
+            <span className="text-white text-xl tracking-wide" style={{ fontFamily: "var(--font-bebas)" }}>AIM-HYE</span>
           </Link>
           <p className="text-white font-semibold text-sm">My Account</p>
           <button onClick={handleLogout} className="text-white/50 hover:text-white text-sm transition-colors">Sign Out</button>

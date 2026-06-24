@@ -36,7 +36,7 @@ export default function ManagerLoginPage() {
           <div className="relative w-20 h-20 rounded-2xl overflow-hidden bg-white shadow-lg mb-4">
             <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-1" />
           </div>
-          <p className="font-black text-2xl tracking-tight" style={{ color: "#1c1c1e" }}>AIM-HYE</p>
+          <p className="text-3xl tracking-wide" style={{ color: "#1c1c1e", fontFamily: "var(--font-bebas)" }}>AIM-HYE</p>
           <p className="text-sm font-medium mt-0.5" style={{ color: "#e0302a" }}>Manager Portal</p>
         </div>
 
