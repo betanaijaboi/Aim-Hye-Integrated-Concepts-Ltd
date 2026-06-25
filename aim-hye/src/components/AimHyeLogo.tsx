@@ -15,7 +15,7 @@ export function AimHyeLogo({ className = "", style }: AimHyeLogoProps) {
       viewBox="0 0 256 61"
       fill="none"
       stroke="currentColor"
-      strokeWidth="7"
+      strokeWidth="10"
       strokeLinecap="round"
       strokeLinejoin="miter"
       aria-label="AIM-HYE"
@@ -33,7 +33,7 @@ export function AimHyeLogo({ className = "", style }: AimHyeLogoProps) {
       <path d="M62.5 57.5V3.5L82.5 40L102.5 3.5V57.5" />
 
       {/* hyphen */}
-      <path d="M111.5 30.5H127.5" />
+      <path d="M114.5 30.5H124.5" />
 
       {/* H */}
       <path d="M136.5 3.5V57.5M170.5 3.5V57.5M136.5 30.5H170.5" />

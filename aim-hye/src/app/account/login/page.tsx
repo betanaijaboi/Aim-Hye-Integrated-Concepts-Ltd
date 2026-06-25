@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { AimHyeLogo } from "@/components/AimHyeLogo";
 
 type Step = "phone" | "otp" | "pin" | "biometric";
 
@@ -136,10 +135,9 @@ export default function CustomerLoginPage() {
         <div className="w-full max-w-sm">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-white shadow-2xl mx-auto mb-4">
-              <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-1" />
+            <div className="relative mx-auto mb-2" style={{ height: "80px", width: "107px" }}>
+              <Image src="/uploads/aimhye-symbol.png" alt="Aim-Hye" fill className="object-contain" style={{ filter: "brightness(0) invert(1)" }} />
             </div>
-            <AimHyeLogo className="h-7 w-auto text-white mx-auto" />
             <p className="text-sm mt-2" style={{ color: "#e0302a" }}>Customer Portal</p>
           </div>
 

@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { AimHyeLogo } from "@/components/AimHyeLogo";
 
 const NAV = [
   { href: "/manager", label: "Dashboard", icon: "M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" },
@@ -47,13 +46,9 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
     <div className="flex h-screen overflow-hidden" style={{ background: "#f5f5f7" }}>
       {/* Sidebar */}
       <aside className="w-60 flex-shrink-0 flex flex-col" style={{ background: "#1c1c1e" }}>
-        <div className="p-5 border-b border-white/10 flex items-center gap-3">
-          <div className="relative w-9 h-9 rounded-xl overflow-hidden bg-white flex-shrink-0">
-            <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-0.5" />
-          </div>
-          <div>
-            <AimHyeLogo className="h-5 w-auto text-white" />
-            <p className="text-[11px] leading-tight" style={{ color: "#e0302a" }}>Manager Panel</p>
+        <div className="p-5 border-b border-white/10 flex items-center">
+          <div className="relative flex-shrink-0" style={{ height: "40px", width: "53px" }}>
+            <Image src="/uploads/aimhye-symbol.png" alt="Aim-Hye" fill className="object-contain" style={{ filter: "brightness(0) invert(1)" }} />
           </div>
         </div>
 

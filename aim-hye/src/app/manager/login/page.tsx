@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { AimHyeLogo } from "@/components/AimHyeLogo";
 
 export default function ManagerLoginPage() {
   const router = useRouter();
@@ -34,10 +33,9 @@ export default function ManagerLoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="relative w-20 h-20 rounded-2xl overflow-hidden bg-white shadow-lg mb-4">
-            <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-1" />
+          <div className="relative mb-4" style={{ height: "80px", width: "107px" }}>
+            <Image src="/uploads/aimhye-symbol.png" alt="Aim-Hye" fill className="object-contain" />
           </div>
-          <AimHyeLogo className="h-8 w-auto" style={{ color: "#0A0F1A" }} />
           <p className="text-sm font-medium mt-0.5" style={{ color: "#e0302a" }}>Manager Portal</p>
         </div>
 

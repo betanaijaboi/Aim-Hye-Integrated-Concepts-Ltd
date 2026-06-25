@@ -5,7 +5,6 @@ import { formatNaira } from "@/lib/utils";
 import { getProductImage, CATEGORY_GRADIENTS } from "@/lib/productImages";
 import { useCart, CartProduct } from "@/lib/useCart";
 import Link from "next/link";
-import { AimHyeLogo } from "@/components/AimHyeLogo";
 
 type Product = CartProduct; // includes packaging, productFamily
 interface Customer { id: string; name: string; phone: string; email?: string; hasPin: boolean }
@@ -249,11 +248,9 @@ export default function StorefrontPage() {
           }}
         >
             <div className="flex flex-col items-center mb-8">
-              <div className="relative w-20 h-20 rounded-2xl overflow-hidden bg-white shadow-2xl mb-4">
-                <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-1" />
+              <div className="relative mb-2" style={{ height: "90px", width: "120px" }}>
+                <Image src="/uploads/aimhye-symbol.png" alt="Aim-Hye" fill className="object-contain" style={{ filter: "brightness(0) invert(1)" }} />
               </div>
-              <AimHyeLogo className="h-10 w-auto text-white" />
-              <p className="text-sm mt-0.5" style={{ color: "#e0302a" }}>Integrated Concepts Limited</p>
             </div>
             <p className="text-white/70 text-center text-sm mb-5">Select your nearest branch to continue</p>
             <div className="space-y-3">
@@ -300,13 +297,9 @@ export default function StorefrontPage() {
       <header className="sticky top-0 z-40 border-b border-white/10" style={{ background: "rgba(28,28,30,0.92)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
         <div className="max-w-7xl mx-auto px-5 py-3 flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-white flex items-center justify-center shadow">
-              <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-0.5" />
-            </div>
-            <div>
-              <AimHyeLogo className="h-5 w-auto text-white" />
-              <p className="text-[11px] leading-tight" style={{ color: "#e0302a" }}>Integrated Concepts Limited</p>
+          <div className="flex items-center">
+            <div className="relative" style={{ height: "48px", width: "64px" }}>
+              <Image src="/uploads/aimhye-symbol.png" alt="Aim-Hye" fill className="object-contain" style={{ filter: "brightness(0) invert(1)" }} />
             </div>
           </div>
           {/* Branch pill */}
@@ -556,12 +549,8 @@ export default function StorefrontPage() {
       {/* Footer */}
       <footer className="text-white mt-16 py-10 px-4 border-t border-white/10" style={{ background: "#1c1c1e" }}>
         <div className="max-w-7xl mx-auto text-center">
-          <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-white mx-auto mb-3 shadow">
-            <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-1" />
-          </div>
-          <div className="flex flex-col items-center gap-1">
-            <AimHyeLogo className="h-6 w-auto text-white" />
-            <span className="text-sm tracking-wide" style={{ color: "#e0302a" }}>Integrated Concepts Limited</span>
+          <div className="relative mx-auto mb-3" style={{ height: "64px", width: "85px" }}>
+            <Image src="/uploads/aimhye-symbol.png" alt="Aim-Hye" fill className="object-contain" style={{ filter: "brightness(0) invert(1)" }} />
           </div>
           <p className="text-white/40 text-xs mt-2">Authorized distributor — Champion · International · Nigerian · Guinness Breweries</p>
           <p className="text-white/30 text-xs mt-1">Orders processed within 24 hours · Delivery available in your area</p>

@@ -4,7 +4,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, useRef, createContext, useContext } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { AimHyeLogo } from "@/components/AimHyeLogo";
 
 export type AdminBranch = "IKOT_EKPENE" | "ITAM";
 export const BranchContext = createContext<{ branch: AdminBranch; setBranch: (b: AdminBranch) => void }>({
@@ -109,16 +108,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         style={{ width: sidebarOpen ? 240 : 64, background: "#1c1c1e" }}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 p-4 border-b border-white/10">
-          <div className="relative w-9 h-9 rounded-xl overflow-hidden bg-white flex-shrink-0 shadow">
-            <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-0.5" />
+        <div className="flex items-center p-4 border-b border-white/10">
+          <div className="relative flex-shrink-0" style={{ height: "40px", width: sidebarOpen ? "53px" : "48px" }}>
+            <Image src="/uploads/aimhye-symbol.png" alt="Aim-Hye" fill className="object-contain" style={{ filter: "brightness(0) invert(1)" }} />
           </div>
-          {sidebarOpen && (
-            <div className="overflow-hidden">
-              <AimHyeLogo className="h-4 w-auto text-white" />
-              <p className="text-[10px] leading-tight mt-0.5" style={{ color: "#e0302a" }}>Integrated Concepts</p>
-            </div>
-          )}
         </div>
 
         {/* Nav */}

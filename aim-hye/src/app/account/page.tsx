@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { AimHyeLogo } from "@/components/AimHyeLogo";
 
 interface Customer {
   id: string;
@@ -271,11 +270,10 @@ export default function AccountPage() {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-white/10" style={{ background: "rgba(28,28,30,0.95)", backdropFilter: "blur(20px)" }}>
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-white flex items-center justify-center">
-              <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-0.5" />
+          <Link href="/" className="flex items-center">
+            <div className="relative" style={{ height: "36px", width: "48px" }}>
+              <Image src="/uploads/aimhye-symbol.png" alt="Aim-Hye" fill className="object-contain" style={{ filter: "brightness(0) invert(1)" }} />
             </div>
-            <AimHyeLogo className="h-5 w-auto text-white" />
           </Link>
           <p className="text-white font-semibold text-sm">My Account</p>
           <button onClick={handleLogout} className="text-white/50 hover:text-white text-sm transition-colors">Sign Out</button>

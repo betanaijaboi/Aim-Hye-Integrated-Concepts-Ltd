@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { formatNaira } from "@/lib/utils";
 import { getProductImage, CATEGORY_GRADIENTS } from "@/lib/productImages";
 import { useCart, CartProduct } from "@/lib/useCart";
-import { AimHyeLogo } from "@/components/AimHyeLogo";
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -112,13 +111,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             </svg>
             <span className="text-sm font-medium hidden sm:inline">Back to Store</span>
           </button>
-          <Link href="/" className="flex items-center gap-3">
-            <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-white flex items-center justify-center shadow">
-              <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-0.5" />
-            </div>
-            <div className="hidden sm:block">
-              <AimHyeLogo className="h-4 w-auto text-white" />
-              <p className="text-[10px] leading-tight" style={{ color: "#e0302a" }}>Integrated Concepts Limited</p>
+          <Link href="/" className="flex items-center">
+            <div className="relative hidden sm:block" style={{ height: "44px", width: "59px" }}>
+              <Image src="/uploads/aimhye-symbol.png" alt="Aim-Hye" fill className="object-contain" style={{ filter: "brightness(0) invert(1)" }} />
             </div>
           </Link>
           <Link href="/" className="relative">
