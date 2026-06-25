@@ -19,6 +19,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const [unit, setUnit] = useState<"bottle" | "crate">("crate");
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const [flavor, setFlavor] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -312,6 +313,39 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 </div>
               </div>
             )}
+
+            {/* Flavor picker — Fayrouz (Assorted) only */}
+            {product.productFamily === "fayrouz-strawberry" && (() => {
+              const FLAVORS = [
+                { key: "peach",      label: "Peach",      color: "#f97316", bg: "#fff7ed" },
+                { key: "pineapple",  label: "Pineapple",  color: "#eab308", bg: "#fefce8" },
+                { key: "watermelon", label: "Watermelon", color: "#22c55e", bg: "#f0fdf4" },
+                { key: "apple",      label: "Apple",      color: "#84cc16", bg: "#f7fee7" },
+              ];
+              return (
+                <div>
+                  <p className="text-sm font-semibold text-slate-700 mb-2">Flavour</p>
+                  <div className="flex flex-wrap gap-2">
+                    {FLAVORS.map((f) => (
+                      <button
+                        key={f.key}
+                        onClick={() => setFlavor(flavor === f.key ? null : f.key)}
+                        className="px-4 py-2 rounded-xl border-2 text-sm font-semibold transition-all"
+                        style={flavor === f.key
+                          ? { borderColor: f.color, background: f.color, color: "#fff" }
+                          : { borderColor: "#e2e8f0", background: f.bg, color: f.color }
+                        }
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                  {!flavor && (
+                    <p className="text-xs text-slate-400 mt-2">Select a flavour preference (optional)</p>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Unit toggle */}
             <div>

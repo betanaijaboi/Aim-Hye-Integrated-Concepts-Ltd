@@ -23,9 +23,9 @@ const PRODUCT_IMAGES: Record<string, string> = {
   "NB-MALTI-33":   "/uploads/maltina.png",
   "NB-AMSTM-33":   "/uploads/amstel-malta.avif",
   "NB-AMSTMU-33":  "/uploads/amstel-malta.avif",
-  "NB-FAYRP-33":   "/uploads/fayrouz-pineapple.png",
+  "NB-FAYRP-33":   "/uploads/fayrouz-pineapple.webp",
   "NB-FAYRS-33":   "/uploads/fayrouz-strawberry.png",
-  "NB-FAYRP-50-PET": "/uploads/fayrouz-pineapple.png",
+  "NB-FAYRP-50-PET": "/uploads/fayrouz-pineapple.webp",
   "NB-FAYRS-50-PET": "/uploads/fayrouz-strawberry.png",
 
   // Can variants — same brand visual, brewery provides can imagery
