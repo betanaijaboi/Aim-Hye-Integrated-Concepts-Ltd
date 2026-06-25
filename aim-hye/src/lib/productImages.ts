@@ -17,7 +17,6 @@ const PRODUCT_IMAGES: Record<string, string> = {
   "NB-MORE-60":    "/uploads/more-lager.png",
   "NB-LEGEND-60":  "/uploads/legend.png",
   "NB-TURBO-60":   "/uploads/turbo-king.png",
-  "NB-33EXP-33":   "/uploads/33-export.png",
   "NB-DESP-33":    "/uploads/desperados.jpg",
   "NB-TIGER-33":   "/uploads/tiger-lager.png",
   "NB-MALTI-33":   "/uploads/maltina.png",
