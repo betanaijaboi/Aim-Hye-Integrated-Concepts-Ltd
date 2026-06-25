@@ -45,7 +45,7 @@ const PRODUCT_IMAGES: Record<string, string> = {
   "GUIN-SATZ-60":  "/uploads/satzenbrau.avif",
   "GUIN-DUBM-33":  "/uploads/dubic-malt.png",
   "GUIN-MALT-33":  "/uploads/malta-guinness.png",
-  "GUIN-MALTH-33": "/uploads/malta-guinness.png",
+  "GUIN-MALTH-33": "/uploads/malta-guinness-herbs.png",
   "GUIN-ORIJ-33":  "/uploads/orijin-v2.png",
   "GUIN-ORIJZ-33": "/uploads/orijin-v2.png",
   "GUIN-SMIRN-33": "/uploads/smirnoff-ice.png",
