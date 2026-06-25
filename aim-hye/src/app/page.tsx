@@ -571,6 +571,8 @@ export default function StorefrontPage() {
             <Link href="/account/register" className="hover:text-white transition-colors">Create Account</Link>
             <span>·</span>
             <Link href="/login" className="hover:text-white transition-colors">Staff Login</Link>
+            <span>·</span>
+            <Link href="/manager/login" className="hover:text-white transition-colors">Manager Login</Link>
           </div>
         </div>
       </footer>
