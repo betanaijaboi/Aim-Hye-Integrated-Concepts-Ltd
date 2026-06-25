@@ -75,7 +75,9 @@ const PRODUCT_IMAGES: Record<string, string> = {
 };
 
 export function getProductImage(sku: string): string | null {
-  return PRODUCT_IMAGES[sku] ?? null;
+  // Itam branch SKUs are prefixed with "ITAM-"; strip it to reuse the same image map
+  const normalised = sku.startsWith("ITAM-") ? sku.slice(5) : sku;
+  return PRODUCT_IMAGES[normalised] ?? null;
 }
 
 export const CATEGORY_GRADIENTS: Record<string, { bg: string; text: string }> = {
