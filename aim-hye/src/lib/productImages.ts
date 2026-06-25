@@ -62,7 +62,7 @@ const PRODUCT_IMAGES: Record<string, string> = {
   "INTL-CASTL-33": "/uploads/castle-lite.png",
   "INTL-FLYF-33":  "/uploads/flying-fish.png",
   "INTL-EAGLE-60": "/uploads/eagle-lager.png",
-  "INTL-EAGST-60": "/uploads/eagle-lager.png",
+  "INTL-EAGST-60": "/uploads/eagle-stout.png",
   "INTL-GRMALT-33":"/uploads/grand-malt.png",
   "INTL-BETM-33":  "/uploads/betamalt.png",
 
