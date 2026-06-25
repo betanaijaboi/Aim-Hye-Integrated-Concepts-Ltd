@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
+import { AimHyeLogo } from "@/components/AimHyeLogo";
 
 export default function CustomerRegisterPage() {
   const router = useRouter();
@@ -51,77 +53,91 @@ export default function CustomerRegisterPage() {
     }
   }
 
+  const inputStyle = { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" };
+  const labelStyle = { color: "rgba(255,255,255,0.5)" };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <header className="bg-[#1e3a5f] text-white py-4 px-6">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <Link href="/account/login" className="text-blue-300 hover:text-white text-sm">← Sign In</Link>
-          <p className="font-semibold">Create Account</p>
-          <div />
+    <div className="min-h-screen flex flex-col" style={{ background: "#1c1c1e" }}>
+      {/* Red top accent */}
+      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, transparent, #e0302a, transparent)" }} />
+
+      {/* Header */}
+      <header className="border-b" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+        <div className="relative px-6 py-4 flex items-center">
+          <Link href="/account/login" className="text-sm transition-colors z-10" style={{ color: "rgba(255,255,255,0.5)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}>
+            ← Sign In
+          </Link>
+          <p className="absolute left-0 right-0 text-center font-semibold text-white pointer-events-none">Create Account</p>
         </div>
       </header>
 
       <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl border border-slate-200 p-8">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-[#1e3a5f] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span className="text-white text-2xl font-bold">A</span>
-              </div>
-              <h1 className="text-xl font-bold text-slate-800">Create Your Account</h1>
-              <p className="text-slate-500 text-sm mt-1">
-                {step === "form" ? "Enter your details to get started" : "Enter the OTP sent to your phone"}
-              </p>
+        <div className="w-full max-w-sm">
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-white shadow-2xl mx-auto mb-4">
+              <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-1" />
             </div>
+            <AimHyeLogo className="h-7 w-auto text-white mx-auto" />
+            <p className="text-sm mt-2" style={{ color: "#e0302a" }}>Customer Portal</p>
+          </div>
+
+          <div className="rounded-2xl shadow-2xl p-8" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <p className="text-center text-sm mb-6" style={{ color: "rgba(255,255,255,0.5)" }}>
+              {step === "form" ? "Enter your details to get started" : "Enter the OTP sent to your phone"}
+            </p>
 
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">{error}</div>
+              <div className="mb-4 p-3 rounded-xl text-sm" style={{ background: "rgba(224,48,42,0.15)", color: "#e0302a" }}>{error}</div>
             )}
 
             {step === "form" && (
               <form onSubmit={handleRegister} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Full Name *</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={labelStyle}>Full Name *</label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Your full name"
                     required
-                    className="w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] focus:border-transparent"
+                    className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none"
+                    style={inputStyle}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Phone Number *</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={labelStyle}>Phone Number *</label>
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="08012345678"
                     required
-                    className="w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] focus:border-transparent"
+                    className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none"
+                    style={inputStyle}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Email Address (optional)</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={labelStyle}>Email Address (optional)</label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="your@email.com"
-                    className="w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] focus:border-transparent"
+                    className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none"
+                    style={inputStyle}
                   />
                 </div>
-                <button
-                  type="submit"
-                  disabled={loading || !name.trim() || !phone.trim()}
-                  className="w-full bg-[#1e3a5f] text-white py-3 rounded-xl font-medium hover:bg-blue-800 transition-colors disabled:opacity-50"
-                >
+                <button type="submit" disabled={loading || !name.trim() || !phone.trim()}
+                  className="w-full py-3 rounded-xl text-white font-semibold text-sm transition-opacity disabled:opacity-50"
+                  style={{ background: "#e0302a" }}>
                   {loading ? "Creating Account..." : "Create Account"}
                 </button>
-                <p className="text-center text-sm text-slate-500">
+                <p className="text-center text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
                   Already have an account?{" "}
-                  <Link href="/account/login" className="text-[#1e3a5f] font-medium hover:underline">Sign in</Link>
+                  <Link href="/account/login" className="font-medium hover:underline" style={{ color: "#e0302a" }}>Sign in</Link>
                 </p>
               </form>
             )}
@@ -129,7 +145,7 @@ export default function CustomerRegisterPage() {
             {step === "otp" && (
               <form onSubmit={handleVerifyOTP} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">6-Digit OTP</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={labelStyle}>6-Digit OTP</label>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -137,18 +153,18 @@ export default function CustomerRegisterPage() {
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
                     placeholder="• • • • • •"
-                    className="w-full border border-slate-300 rounded-xl px-4 py-3 text-center text-xl tracking-widest text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]"
+                    className="w-full rounded-xl px-4 py-3 text-center text-xl tracking-widest focus:outline-none"
+                    style={inputStyle}
                   />
-                  <p className="text-xs text-slate-400 mt-2 text-center">OTP sent to {phone} · valid for 10 minutes</p>
+                  <p className="text-xs mt-2 text-center" style={{ color: "rgba(255,255,255,0.3)" }}>OTP sent to {phone} · valid for 10 minutes</p>
                 </div>
-                <button
-                  type="submit"
-                  disabled={loading || otp.length < 6}
-                  className="w-full bg-[#1e3a5f] text-white py-3 rounded-xl font-medium hover:bg-blue-800 transition-colors disabled:opacity-50"
-                >
+                <button type="submit" disabled={loading || otp.length < 6}
+                  className="w-full py-3 rounded-xl text-white font-semibold text-sm transition-opacity disabled:opacity-50"
+                  style={{ background: "#e0302a" }}>
                   {loading ? "Verifying..." : "Verify & Create Account"}
                 </button>
-                <button type="button" onClick={() => setStep("form")} className="w-full text-sm text-slate-500 hover:text-slate-700">
+                <button type="button" onClick={() => setStep("form")}
+                  className="w-full text-sm py-1" style={{ color: "rgba(255,255,255,0.35)" }}>
                   Back
                 </button>
               </form>
