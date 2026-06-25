@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { AimHyeLogo } from "@/components/AimHyeLogo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,9 +27,11 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-amber-500 rounded-2xl flex items-center justify-center font-bold text-white text-3xl mx-auto mb-4">A</div>
-          <h1 className="text-2xl font-bold text-white">Aim-Hye Integrated Concepts</h1>
-          <p className="text-blue-300 text-sm mt-1">Distribution Management System</p>
+          <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-white shadow-xl mx-auto mb-4">
+            <Image src="/uploads/aimhye-logo.jpg" alt="Aim-Hye" fill className="object-contain p-1" />
+          </div>
+          <AimHyeLogo className="h-8 w-auto text-white mx-auto" />
+          <p className="text-blue-300 text-sm mt-2">Distribution Management System</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8">
