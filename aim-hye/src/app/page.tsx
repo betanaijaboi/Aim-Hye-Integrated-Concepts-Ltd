@@ -437,7 +437,7 @@ export default function StorefrontPage() {
                           fill
                           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                           priority={gridIndex < 8}
-                          className={`group-hover:scale-105 transition-transform duration-300 ${["INTL-FLYF-33","INTL-CASTL-33","INTL-BUD-33","INTL-BUDR-33","GUIN-SATZ-60"].includes(p.sku) ? "object-cover" : "object-contain p-2 drop-shadow-lg"}`}
+                          className={`group-hover:scale-105 transition-transform duration-300 ${["INTL-FLYF-33","INTL-CASTL-33","INTL-BUD-33","INTL-BUDR-33","GUIN-SATZ-60"].includes(p.sku.replace(/^ITAM-/, "")) ? "object-cover" : "object-contain p-2 drop-shadow-lg"}`}
                           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                       )}
