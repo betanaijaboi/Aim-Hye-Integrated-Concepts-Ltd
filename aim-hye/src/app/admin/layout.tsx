@@ -183,21 +183,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
           <div className="flex items-center gap-3">
             {/* Branch switcher */}
-            <div className="relative flex items-center bg-slate-100 rounded-lg p-1">
-              <div
-                className="absolute inset-y-1 rounded-md transition-all duration-200"
-                style={{
-                  background: "#1c1c1e",
-                  left: branch === "IKOT_EKPENE" ? 4 : "calc(50% + 2px)",
-                  width: "calc(50% - 6px)",
-                }}
-              />
+            <div className="flex items-center bg-slate-100 rounded-lg p-1 gap-1">
               {(["IKOT_EKPENE", "ITAM"] as const).map((b) => (
                 <button
                   key={b}
                   onClick={() => setBranch(b)}
-                  className="relative z-10 flex-1 px-3 py-1 rounded-md text-xs font-semibold transition-colors duration-200 whitespace-nowrap"
-                  style={{ color: branch === b ? "#fff" : "#64748b" }}
+                  className="px-3 py-1 rounded-md text-xs font-semibold transition-all duration-200 whitespace-nowrap"
+                  style={branch === b
+                    ? { background: "#1c1c1e", color: "#fff" }
+                    : { color: "#64748b" }
+                  }
                 >
                   {b === "IKOT_EKPENE" ? "Ikot Ekpene" : "Itam"}
                 </button>
