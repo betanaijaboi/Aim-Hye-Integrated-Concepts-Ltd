@@ -1,0 +1,17 @@
+# Aim-Hye Integrated Concepts Ltd
+
+> Nigeria's beverage distributor — Champion, International, Nigerian, and Guinness Breweries products, ordered online for delivery or branch pickup.
+
+Aim-Hye Integrated Concepts Limited is a registered beverage distribution company operating from two branches in Akwa Ibom State, Nigeria (Ikot Ekpene and Itam). Customers browse lagers, stouts, malts, RTDs, and spirits by the bottle or crate, order online with card (Paystack) or bank transfer, and pick up or have orders delivered. Crates carry a refundable deposit ("empties").
+
+## Key pages
+- `/` — storefront: browse and order products
+- `/products/{id}` — individual product detail page
+- `/account/register`, `/account/login` — customer accounts (phone/OTP/PIN, optional biometric)
+
+## Legal
+- Terms of Service: /terms
+- Privacy Policy: /privacy
+
+## Stack
+Next.js (App Router), Prisma, Paystack for payments.
