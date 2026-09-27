@@ -1,9 +1,16 @@
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 
-const SECRET = new TextEncoder().encode(
-  process.env.NEXTAUTH_SECRET || "aim-hye-manager-secret"
-);
+// The dev fallback is public (this repo is open source), so production must
+// set NEXTAUTH_SECRET. Resolved lazily so `next build` doesn't need it.
+const AUDIENCE = "manager";
+function getSecret(): Uint8Array {
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret && process.env.NODE_ENV === "production") {
+    throw new Error("NEXTAUTH_SECRET must be set in production");
+  }
+  return new TextEncoder().encode(secret || "aim-hye-manager-secret");
+}
 
 export interface ManagerSession {
   id: string;
@@ -16,8 +23,9 @@ export interface ManagerSession {
 export async function createManagerToken(user: ManagerSession): Promise<string> {
   return new SignJWT({ ...user })
     .setProtectedHeader({ alg: "HS256" })
+    .setAudience(AUDIENCE)
     .setExpirationTime("8h")
-    .sign(SECRET);
+    .sign(getSecret());
 }
 
 export async function getManagerSession(): Promise<ManagerSession | null> {
@@ -25,7 +33,7 @@ export async function getManagerSession(): Promise<ManagerSession | null> {
     const cookieStore = await cookies();
     const token = cookieStore.get("manager_token")?.value;
     if (!token) return null;
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getSecret(), { audience: AUDIENCE });
     return payload as unknown as ManagerSession;
   } catch {
     return null;
