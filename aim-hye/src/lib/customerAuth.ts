@@ -2,9 +2,16 @@ import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 import { prisma } from "./prisma";
 
-const SECRET = new TextEncoder().encode(
-  process.env.NEXTAUTH_SECRET || "aim-hye-customer-secret"
-);
+// The dev fallback is public (this repo is open source), so production must
+// set NEXTAUTH_SECRET. Resolved lazily so `next build` doesn't need it.
+const AUDIENCE = "customer";
+function getSecret(): Uint8Array {
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret && process.env.NODE_ENV === "production") {
+    throw new Error("NEXTAUTH_SECRET must be set in production");
+  }
+  return new TextEncoder().encode(secret || "aim-hye-customer-secret");
+}
 
 export interface CustomerSession {
   id: string;
@@ -17,8 +24,9 @@ export interface CustomerSession {
 export async function createCustomerToken(customer: CustomerSession): Promise<string> {
   return new SignJWT({ ...customer })
     .setProtectedHeader({ alg: "HS256" })
+    .setAudience(AUDIENCE)
     .setExpirationTime("7d")
-    .sign(SECRET);
+    .sign(getSecret());
 }
 
 export async function getCustomerSession(): Promise<CustomerSession | null> {
@@ -26,7 +34,7 @@ export async function getCustomerSession(): Promise<CustomerSession | null> {
     const cookieStore = await cookies();
     const token = cookieStore.get("customer_token")?.value;
     if (!token) return null;
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getSecret(), { audience: AUDIENCE });
     return payload as unknown as CustomerSession;
   } catch {
     return null;

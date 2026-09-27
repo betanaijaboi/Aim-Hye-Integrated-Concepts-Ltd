@@ -60,23 +60,24 @@ cp .env.example .env
 Then open `.env` and fill in these values:
 
 ```env
-# Database (SQLite — no external DB needed for local dev)
-DATABASE_URL="file:./prisma/dev.db"
-
-# Session secret — generate any long random string
-SESSION_SECRET="replace-this-with-a-random-secret-at-least-32-chars"
+# Signs customer and manager session cookies (and NextAuth).
+# Required in production. Generate with: openssl rand -base64 32
+NEXTAUTH_SECRET="replace-with-a-long-random-string"
 
 # Paystack (get keys from https://dashboard.paystack.com)
 PAYSTACK_SECRET_KEY="sk_test_xxxxxxxxxxxxxxxxxxxx"
-PAYSTACK_PUBLIC_KEY="pk_test_xxxxxxxxxxxxxxxxxxxx"
+NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY="pk_test_xxxxxxxxxxxxxxxxxxxx"
 
-# App URL (use localhost for development)
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
+# WebAuthn / passkey settings (must match the browser URL)
+NEXT_PUBLIC_RP_ID="localhost"
+NEXT_PUBLIC_RP_NAME="Aim-Hye Integrated Concepts"
+NEXT_PUBLIC_ORIGIN="http://localhost:3000"
 
-# WebAuthn / passkey origin (must match the browser URL)
-WEBAUTHN_RPID="localhost"
-WEBAUTHN_ORIGIN="http://localhost:3000"
+# Canonical site URL for SEO metadata, sitemap and robots.txt
+NEXT_PUBLIC_SITE_URL="http://localhost:3000"
 ```
+
+The SQLite database lives at `prisma/dev.db`, so no `DATABASE_URL` is needed.
 
 > **Paystack keys are optional for local testing** — the app will still run, but payment flows won't process real transactions.
 

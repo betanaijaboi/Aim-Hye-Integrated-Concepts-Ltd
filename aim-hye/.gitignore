@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local server logs
+*.log
+server.err
+
+# keep the env template
+!.env.example
